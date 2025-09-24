@@ -147,7 +147,13 @@
   - Integrar visualización de rutas en el mapa frontend
   - _Requisitos: 2.2, 3.1, 3.2, 3.4_
 
-- [ ] 12. Implementar funcionalidad de planes multi-día
+- [x] 12. Implementar funcionalidad de planes multi-día
+
+
+
+
+
+
   - Crear componentes para gestión de múltiples días
   - Implementar navegación entre días del plan
   - Agregar funcionalidad para mover escape rooms entre días

@@ -1,5 +1,3 @@
-using EscapeRoomPlanner.Domain.Enums;
-
 namespace EscapeRoomPlanner.Domain.Entities;
 
 public class RouteStop : BaseEntity
@@ -10,7 +8,7 @@ public class RouteStop : BaseEntity
     public TimeSpan EstimatedArrivalTime { get; private set; }
     public TimeSpan EstimatedTravelTime { get; private set; }
     public string? Notes { get; private set; }
-    public TransportMode? TransportModeToNext { get; private set; }
+    public string? TransportModeToNext { get; private set; }
     public bool IsMultiModalSegment { get; private set; }
 
     private RouteStop() { } // For EF Core
@@ -19,14 +17,14 @@ public class RouteStop : BaseEntity
     {
         if (escapeRoomId == Guid.Empty)
             throw new ArgumentException("Escape room ID cannot be empty", nameof(escapeRoomId));
-        if (dailyRouteId == Guid.Empty)
-            throw new ArgumentException("Daily route ID cannot be empty", nameof(dailyRouteId));
         if (order <= 0)
             throw new ArgumentException("Order must be positive", nameof(order));
+        if (dailyRouteId == Guid.Empty)
+            throw new ArgumentException("Daily route ID cannot be empty", nameof(dailyRouteId));
 
         EscapeRoomId = escapeRoomId;
-        DailyRouteId = dailyRouteId;
         Order = order;
+        DailyRouteId = dailyRouteId;
         EstimatedArrivalTime = TimeSpan.Zero;
         EstimatedTravelTime = TimeSpan.Zero;
         IsMultiModalSegment = false;
@@ -59,20 +57,10 @@ public class RouteStop : BaseEntity
         UpdateTimestamp();
     }
 
-    public void UpdateTransportToNext(TransportMode? transportMode, bool isMultiModal = false)
+    public void UpdateTransportMode(string? transportMode, bool isMultiModal = false)
     {
         TransportModeToNext = transportMode;
         IsMultiModalSegment = isMultiModal;
         UpdateTimestamp();
-    }
-
-    public bool IsFirstStop()
-    {
-        return Order == 1;
-    }
-
-    public TimeSpan GetEstimatedDepartureTime(TimeSpan escapeRoomDuration)
-    {
-        return EstimatedArrivalTime.Add(escapeRoomDuration);
     }
 }

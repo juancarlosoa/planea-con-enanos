@@ -2,7 +2,7 @@ import { forwardRef } from 'react'
 import { cn } from '@/shared/utils/cn'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'default'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   children: React.ReactNode
@@ -16,6 +16,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       secondary: 'btn-secondary',
       outline: 'btn-outline',
       ghost: 'btn-ghost',
+      default: 'btn-primary', // Same as primary for now
     }
     const sizeClasses = {
       sm: 'btn-sm',

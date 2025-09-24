@@ -59,3 +59,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService()
+export const api = apiService // Export as 'api' for compatibility

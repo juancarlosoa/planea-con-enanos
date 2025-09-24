@@ -31,15 +31,40 @@ export interface Route {
     updatedAt: Date
 }
 
+export interface RouteStop {
+    id: string
+    escapeRoomId: string
+    escapeRoom?: EscapeRoom
+    order: number
+    estimatedArrivalTime: number // minutes from start of day
+    estimatedTravelTime: number // minutes to next stop
+    notes?: string
+    transportModeToNext?: string
+    isMultiModalSegment: boolean
+}
+
+export interface DailyRoute {
+    id: string
+    date: string // ISO date string
+    planId: string
+    estimatedTotalTime: number // in minutes
+    estimatedCost: number
+    preferredTransportMode: 'driving' | 'walking' | 'publicTransport' | 'cycling'
+    multiModalStrategy: 'singleMode' | 'parkAndWalk' | 'publicTransportAndWalk' | 'automatic'
+    stops: RouteStop[]
+    createdAt: Date
+    updatedAt: Date
+}
+
 export interface Plan {
     id: string
     name: string
     description?: string
-    routes: Route[]
-    startDate: Date
-    endDate: Date
-    participants: number
-    status: 'draft' | 'confirmed' | 'completed' | 'cancelled'
+    startDate: string // ISO date string
+    endDate: string // ISO date string
+    dailyRoutes: DailyRoute[]
+    createdBy: string
+    status: 'draft' | 'active' | 'completed' | 'cancelled' | 'archived'
     createdAt: Date
     updatedAt: Date
 }
