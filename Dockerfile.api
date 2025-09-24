@@ -1,0 +1,30 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy csproj files and restore dependencies
+COPY ["src/EscapeRoomPlanner.Api/EscapeRoomPlanner.Api.csproj", "src/EscapeRoomPlanner.Api/"]
+COPY ["src/EscapeRoomPlanner.Application/EscapeRoomPlanner.Application.csproj", "src/EscapeRoomPlanner.Application/"]
+COPY ["src/EscapeRoomPlanner.Domain/EscapeRoomPlanner.Domain.csproj", "src/EscapeRoomPlanner.Domain/"]
+COPY ["src/EscapeRoomPlanner.Infrastructure/EscapeRoomPlanner.Infrastructure.csproj", "src/EscapeRoomPlanner.Infrastructure/"]
+
+RUN dotnet restore "src/EscapeRoomPlanner.Api/EscapeRoomPlanner.Api.csproj"
+
+# Copy source code and build
+COPY . .
+WORKDIR "/src/src/EscapeRoomPlanner.Api"
+RUN dotnet build "EscapeRoomPlanner.Api.csproj" -c Release -o /app/build
+
+# Publish stage
+FROM build AS publish
+RUN dotnet publish "EscapeRoomPlanner.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+EXPOSE 80
+EXPOSE 443
+
+ENTRYPOINT ["dotnet", "EscapeRoomPlanner.Api.dll"]
