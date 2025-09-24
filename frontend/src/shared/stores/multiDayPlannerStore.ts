@@ -3,52 +3,71 @@ import { devtools, persist } from 'zustand/middleware'
 import { EscapeRoom, Plan, DailyRoute, RouteStop } from '../types'
 
 // Store state interface
-interface MultiDayPlannerState {
+interface PlannerState {
   // Current multi-day plan state
-  currentPlan: Plan | null
-  selectedDayIndex: number
-  timeLimit: number // minutes per day
+  currentPlan: Plan | null;
+  selectedDayIndex: number;
+  timeLimit: number; // minutes per day
   
   // UI state
-  isOptimizingRoute: boolean
-  isDirty: boolean
-  validationErrors: Record<string, string[]>
-  suggestions: PlanSuggestion[]
+  isOptimizingRoute: boolean;
+  isDirty: boolean;
+  validationErrors: Record<string, string[]>;
+  suggestions: PlanSuggestion[];
   
-  // Actions for plan management
-  createNewPlan: (name: string, description: string, startDate: string, endDate: string) => void
-  loadPlan: (plan: Plan) => void
-  updatePlanInfo: (name: string, description: string) => void
-  updateDateRange: (startDate: string, endDate: string) => void
-  clearCurrentPlan: () => void
-  
-  // Actions for day navigation
-  selectDay: (dayIndex: number) => void
-  getSelectedDay: () => DailyRoute | null
-  
-  // Actions for escape room management
-  addEscapeRoomToDay: (dayIndex: number, escapeRoom: EscapeRoom) => void
-  removeEscapeRoomFromDay: (dayIndex: number, escapeRoomId: string) => void
-  moveEscapeRoomBetweenDays: (escapeRoomId: string, fromDayIndex: number, toDayIndex: number) => void
-  reorderEscapeRoomsInDay: (dayIndex: number, fromIndex: number, toIndex: number) => void
-  
-  // Actions for time management
-  setTimeLimit: (minutes: number) => void
-  validateDayTime: (dayIndex: number) => boolean
-  getTotalTimeForDay: (dayIndex: number) => number
-  getExceededTimeForDay: (dayIndex: number) => number
-  
-  // Actions for suggestions
-  generateSuggestions: () => void
-  applySuggestion: (suggestionId: string) => void
-  dismissSuggestion: (suggestionId: string) => void
-  
-  // Utility actions
-  markDirty: () => void
-  markClean: () => void
-  resetStore: () => void
+  // Loading states
+  isLoading: boolean;
+  isCreating: boolean;
+  isSaving: boolean;
+  isEditing: boolean;
+  error: string | null;
+
+  // Backup state for rollback
+  lastValidState: Omit<PlannerState, 'lastValidState'> | null;
 }
 
+// Store actions interface
+interface PlannerActions {
+  // Plan management
+  createNewPlan: (name: string, description: string, startDate: string, endDate: string) => Promise<void>;
+  loadPlan: (plan: Plan) => Promise<void>;
+  updatePlanInfo: (name: string, description: string) => Promise<void>;
+  updateDateRange: (startDate: string, endDate: string) => Promise<void>;
+  clearCurrentPlan: () => void;
+
+  // Day management
+  selectDay: (dayIndex: number) => void;
+  getSelectedDay: () => DailyRoute | null;
+  addEscapeRoomToDay: (dayIndex: number, escapeRoom: EscapeRoom) => Promise<void>;
+  removeEscapeRoomFromDay: (dayIndex: number, escapeRoomId: string) => Promise<void>;
+  moveEscapeRoomBetweenDays: (escapeRoomId: string, fromDayIndex: number, toDayIndex: number) => Promise<void>;
+  reorderEscapeRoomsInDay: (dayIndex: number, fromIndex: number, toIndex: number) => Promise<void>;
+
+  // Time management
+  setTimeLimit: (minutes: number) => void;
+  validateDayTime: (dayIndex: number) => boolean;
+  getTotalTimeForDay: (dayIndex: number) => number;
+  getExceededTimeForDay: (dayIndex: number) => number;
+
+  // Suggestions management
+  generateSuggestions: () => void;
+  applySuggestion: (suggestionId: string) => Promise<void>;
+  dismissSuggestion: (suggestionId: string) => void;
+
+  // State management
+  validateState: () => boolean;
+  saveState: () => void;
+  rollback: () => void;
+  lockEditing: () => void;
+  unlockEditing: () => void;
+  markDirty: () => void;
+  markClean: () => void;
+  resetStore: () => void;
+}
+
+// Combined store type
+type MultiDayPlannerStore = PlannerState & PlannerActions;
+  
 interface PlanSuggestion {
   id: string
   type: 'moveEscapeRoom' | 'removeEscapeRoom' | 'reorderDay' | 'splitDay'
@@ -86,21 +105,37 @@ const generateDateRange = (startDate: string, endDate: string): string[] => {
 }
 
 const calculateRouteTime = (stops: RouteStop[], escapeRooms: EscapeRoom[]): number => {
-  let totalTime = 0
-  
-  stops.forEach(stop => {
-    const escapeRoom = escapeRooms.find(er => er.id === stop.escapeRoomId)
-    if (escapeRoom) {
-      totalTime += escapeRoom.duration // Time at escape room
-      totalTime += stop.estimatedTravelTime // Travel time to next stop
+  try {
+    if (!Array.isArray(stops) || !Array.isArray(escapeRooms)) return 0;
+    if (!stops.length || !escapeRooms.length) return 0;
+    
+    let totalTime = 0;
+    
+    for (const stop of stops) {
+      if (!stop || typeof stop !== 'object') continue;
+      
+      const escapeRoom = escapeRooms.find(er => 
+        er && 
+        typeof er === 'object' && 
+        'id' in er && 
+        er.id === stop.escapeRoomId
+      );
+      
+      if (escapeRoom && typeof escapeRoom === 'object' && 'duration' in escapeRoom) {
+        totalTime += Number(escapeRoom.duration) || 0; // Time at escape room
+        totalTime += Number(stop.estimatedTravelTime) || 0; // Travel time to next stop
+      }
     }
-  })
-  
-  return totalTime
+    
+    return totalTime;
+  } catch (error) {
+    console.error('Error in calculateRouteTime:', error);
+    return 0;
+  }
 }
 
 // Initial state
-const initialState = {
+const initialState: PlannerState = {
   currentPlan: null,
   selectedDayIndex: 0,
   timeLimit: 480, // 8 hours in minutes
@@ -108,49 +143,65 @@ const initialState = {
   isDirty: false,
   validationErrors: {},
   suggestions: [],
+  isLoading: false,
+  isCreating: false,
+  isSaving: false,
+  isEditing: false,
+  error: null,
+  lastValidState: null
 }
 
 // Create the store
-export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
+export const useMultiDayPlannerStore = create<MultiDayPlannerStore>()(
   devtools(
     persist(
       (set, get) => ({
         ...initialState,
         
         // Plan management actions
-        createNewPlan: (name: string, description: string, startDate: string, endDate: string) => {
-          const planId = `plan-${Date.now()}`
-          const dates = generateDateRange(startDate, endDate)
-          
-          const dailyRoutes = dates.map(date => createEmptyDailyRoute(date, planId))
-          
-          const newPlan: Plan = {
-            id: planId,
-            name,
-            description,
-            startDate,
-            endDate,
-            dailyRoutes,
-            createdBy: 'current-user', // TODO: Get from auth
-            status: 'draft',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+        createNewPlan: async (name: string, description: string, startDate: string, endDate: string) => {
+          try {
+            const planId = `plan-${Date.now()}`
+            const dates = generateDateRange(startDate, endDate)
+            
+            const dailyRoutes = dates.map(date => createEmptyDailyRoute(date, planId))
+            
+            const newPlan: Plan = {
+              id: planId,
+              name,
+              description,
+              startDate,
+              endDate,
+              dailyRoutes,
+              createdBy: 'current-user', // TODO: Get from auth
+              status: 'draft',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }
+            
+            // Primero limpiamos el estado completamente
+            set(() => ({ ...initialState }), false, 'resetBeforeCreate')
+            
+            // Luego establecemos el nuevo plan
+            set(
+              () => ({
+                currentPlan: newPlan,
+                selectedDayIndex: 0,
+                isDirty: true,
+                validationErrors: {},
+                suggestions: [],
+              }),
+              false,
+              'createNewPlan'
+            )
+          } catch (error) {
+            console.error('Error creating new plan:', error)
+            // En caso de error, aseguramos un estado limpio
+            set(() => ({ ...initialState }), false, 'errorRecovery')
           }
-          
-          set(
-            () => ({
-              currentPlan: newPlan,
-              selectedDayIndex: 0,
-              isDirty: true,
-              validationErrors: {},
-              suggestions: [],
-            }),
-            false,
-            'createNewPlan'
-          )
         },
         
-        loadPlan: (plan: Plan) => {
+        loadPlan: async (plan: Plan) => {
           set(
             () => ({
               currentPlan: plan,
@@ -164,7 +215,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
           )
         },
         
-        updatePlanInfo: (name: string, description: string) => {
+        updatePlanInfo: async (name: string, description: string) => {
           const { currentPlan } = get()
           if (!currentPlan) return
           
@@ -183,7 +234,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
           )
         },
         
-        updateDateRange: (startDate: string, endDate: string) => {
+        updateDateRange: async (startDate: string, endDate: string) => {
           const { currentPlan } = get()
           if (!currentPlan) return
           
@@ -216,11 +267,8 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
         clearCurrentPlan: () => {
           set(
             () => ({
+              ...initialState,
               currentPlan: null,
-              selectedDayIndex: 0,
-              isDirty: false,
-              validationErrors: {},
-              suggestions: [],
             }),
             false,
             'clearCurrentPlan'
@@ -250,7 +298,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
         },
         
         // Escape room management actions
-        addEscapeRoomToDay: (dayIndex: number, escapeRoom: EscapeRoom) => {
+        addEscapeRoomToDay: async (dayIndex: number, escapeRoom: EscapeRoom) => {
           const { currentPlan } = get()
           if (!currentPlan || dayIndex < 0 || dayIndex >= currentPlan.dailyRoutes.length) {
             return
@@ -297,7 +345,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
           get().generateSuggestions()
         },
         
-        removeEscapeRoomFromDay: (dayIndex: number, escapeRoomId: string) => {
+        removeEscapeRoomFromDay: async (dayIndex: number, escapeRoomId: string) => {
           const { currentPlan } = get()
           if (!currentPlan || dayIndex < 0 || dayIndex >= currentPlan.dailyRoutes.length) {
             return
@@ -331,7 +379,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
           get().generateSuggestions()
         },
         
-        moveEscapeRoomBetweenDays: (escapeRoomId: string, fromDayIndex: number, toDayIndex: number) => {
+        moveEscapeRoomBetweenDays: async (escapeRoomId: string, fromDayIndex: number, toDayIndex: number) => {
           const { currentPlan } = get()
           if (!currentPlan || 
               fromDayIndex < 0 || fromDayIndex >= currentPlan.dailyRoutes.length ||
@@ -394,7 +442,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
           get().generateSuggestions()
         },
         
-        reorderEscapeRoomsInDay: (dayIndex: number, fromIndex: number, toIndex: number) => {
+        reorderEscapeRoomsInDay: async (dayIndex: number, fromIndex: number, toIndex: number) => {
           const { currentPlan } = get()
           if (!currentPlan || dayIndex < 0 || dayIndex >= currentPlan.dailyRoutes.length) {
             return
@@ -451,7 +499,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
         
         validateDayTime: (dayIndex: number) => {
           const { currentPlan, timeLimit } = get()
-          if (!currentPlan || dayIndex < 0 || dayIndex >= currentPlan.dailyRoutes.length) {
+          if (!currentPlan?.dailyRoutes?.length || dayIndex < 0 || dayIndex >= currentPlan.dailyRoutes.length) {
             return true
           }
           
@@ -461,14 +509,35 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
         
         getTotalTimeForDay: (dayIndex: number) => {
           const { currentPlan } = get()
-          if (!currentPlan || dayIndex < 0 || dayIndex >= currentPlan.dailyRoutes.length) {
+          if (!currentPlan?.dailyRoutes?.length || dayIndex < 0 || dayIndex >= currentPlan.dailyRoutes.length) {
             return 0
           }
           
           const dailyRoute = currentPlan.dailyRoutes[dayIndex]
-          const escapeRooms = dailyRoute.stops.map(stop => stop.escapeRoom).filter(Boolean) as EscapeRoom[]
-          
-          return calculateRouteTime(dailyRoute.stops, escapeRooms)
+          if (!dailyRoute?.stops?.length) {
+            return 0
+          }
+
+          try {
+            const validStops = dailyRoute.stops.filter((stop): stop is RouteStop => 
+              stop !== undefined && 
+              stop !== null && 
+              typeof stop === 'object'
+            )
+            
+            const escapeRooms = validStops
+              .map(stop => stop.escapeRoom)
+              .filter((er): er is EscapeRoom => 
+                er !== undefined && 
+                er !== null && 
+                typeof er === 'object'
+              )
+            
+            return calculateRouteTime(validStops, escapeRooms)
+          } catch (error) {
+            console.error('Error calculating total time:', error)
+            return 0
+          }
         },
         
         getExceededTimeForDay: (dayIndex: number) => {
@@ -479,75 +548,104 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
         
         // Suggestion actions
         generateSuggestions: () => {
-          const { currentPlan, timeLimit } = get()
-          if (!currentPlan) return
-          
-          const suggestions: PlanSuggestion[] = []
-          
-          currentPlan.dailyRoutes.forEach((dailyRoute, dayIndex) => {
-            const totalTime = get().getTotalTimeForDay(dayIndex)
-            const exceededTime = totalTime - timeLimit
+          try {
+            const { currentPlan, timeLimit } = get();
+            if (!currentPlan?.dailyRoutes?.length) {
+              set(() => ({ suggestions: [] }), false, 'generateSuggestions');
+              return;
+            }
             
-            if (exceededTime > 0) {
-              // Suggest moving escape rooms to other days
-              const sortedStops = [...dailyRoute.stops].sort((a, b) => {
-                const durationA = a.escapeRoom?.duration || 0
-                const durationB = b.escapeRoom?.duration || 0
-                return durationB - durationA // Longest first
-              })
+            const suggestions: PlanSuggestion[] = [];
+            
+            for (let dayIndex = 0; dayIndex < currentPlan.dailyRoutes.length; dayIndex++) {
+              const dailyRoute = currentPlan.dailyRoutes[dayIndex];
+              if (!dailyRoute?.stops?.length) continue;
               
-              for (const stop of sortedStops) {
-                if (!stop.escapeRoom) continue
+              const totalTime = get().getTotalTimeForDay(dayIndex);
+              const exceededTime = totalTime - (timeLimit ?? 0);
+              
+              if (exceededTime > 0) {
+                // Suggest moving escape rooms to other days
+                const validStops = dailyRoute.stops.filter((stop): stop is RouteStop => 
+                  stop !== undefined && 
+                  stop !== null && 
+                  typeof stop === 'object' &&
+                  'escapeRoom' in stop &&
+                  stop.escapeRoom !== null &&
+                  typeof stop.escapeRoom === 'object' &&
+                  'duration' in stop.escapeRoom
+                );
                 
-                // Find a day with available time
-                const targetDayIndex = currentPlan.dailyRoutes.findIndex((_, index) => {
-                  if (index === dayIndex) return false
-                  const dayTime = get().getTotalTimeForDay(index)
-                  return dayTime + stop.escapeRoom!.duration <= timeLimit
-                })
+                if (!validStops.length) continue;
                 
-                if (targetDayIndex !== -1) {
-                  const targetDate = new Date(currentPlan.dailyRoutes[targetDayIndex].date)
-                    .toLocaleDateString('es-ES', { weekday: 'long', month: 'short', day: 'numeric' })
+                const sortedStops = [...validStops].sort((a, b) => {
+                  const durationA = a.escapeRoom?.duration ?? 0;
+                  const durationB = b.escapeRoom?.duration ?? 0;
+                  return durationB - durationA; // Longest first
+                });
+                
+                for (const stop of sortedStops) {
+                  if (!stop.escapeRoom?.duration) continue;
                   
-                  suggestions.push({
-                    id: `move-${stop.id}`,
-                    type: 'moveEscapeRoom',
-                    dayIndex,
-                    escapeRoomId: stop.escapeRoomId,
-                    targetDayIndex,
-                    message: `Mover "${stop.escapeRoom.name}" al ${targetDate} para reducir el tiempo del día`,
-                    severity: 'warning',
-                  })
-                  break // Only suggest one move per overloaded day
+                  // Find a day with available time
+                  let targetDayIndex = -1;
+                  for (let i = 0; i < currentPlan.dailyRoutes.length; i++) {
+                    if (i === dayIndex) continue;
+                    
+                    const dayTime = get().getTotalTimeForDay(i);
+                    if ((dayTime + stop.escapeRoom.duration) <= (timeLimit ?? 0)) {
+                      targetDayIndex = i;
+                      break;
+                    }
+                  }
+                  
+                  if (targetDayIndex !== -1 && currentPlan.dailyRoutes[targetDayIndex]?.date) {
+                    try {
+                      const targetDate = new Date(currentPlan.dailyRoutes[targetDayIndex].date)
+                        .toLocaleDateString('es-ES', { weekday: 'long', month: 'short', day: 'numeric' });
+                      
+                      suggestions.push({
+                        id: `move-${stop.id}`,
+                        type: 'moveEscapeRoom',
+                        dayIndex,
+                        escapeRoomId: stop.escapeRoomId,
+                        targetDayIndex,
+                        message: `Mover "${stop.escapeRoom.name ?? 'Escape Room'}" al ${targetDate} para reducir el tiempo del día`,
+                        severity: 'warning',
+                      });
+                      break; // Only suggest one move per overloaded day
+                    } catch (error) {
+                      console.error('Error formatting date:', error);
+                      continue;
+                    }
+                  }
                 }
-              }
-              
-              // If no move is possible, suggest removing
-              if (suggestions.length === 0 && dailyRoute.stops.length > 0) {
-                const longestStop = sortedStops[0]
-                if (longestStop.escapeRoom) {
-                  suggestions.push({
-                    id: `remove-${longestStop.id}`,
-                    type: 'removeEscapeRoom',
-                    dayIndex,
-                    escapeRoomId: longestStop.escapeRoomId,
-                    message: `Considerar quitar "${longestStop.escapeRoom.name}" (${longestStop.escapeRoom.duration} min) para ajustar el tiempo`,
-                    severity: 'error',
-                  })
+                
+                // If no move is possible, suggest removing
+                if (suggestions.length === 0 && sortedStops.length > 0) {
+                  const longestStop = sortedStops[0];
+                  if (longestStop.escapeRoom?.name && longestStop.escapeRoom?.duration) {
+                    suggestions.push({
+                      id: `remove-${longestStop.id}`,
+                      type: 'removeEscapeRoom',
+                      dayIndex,
+                      escapeRoomId: longestStop.escapeRoomId,
+                      message: `Considerar quitar "${longestStop.escapeRoom.name}" (${longestStop.escapeRoom.duration} min) para ajustar el tiempo`,
+                      severity: 'error',
+                    });
+                  }
                 }
               }
             }
-          })
-          
-          set(
-            () => ({ suggestions }),
-            false,
-            'generateSuggestions'
-          )
+            
+            set(() => ({ suggestions }), false, 'generateSuggestions');
+          } catch (error) {
+            console.error('Error generating suggestions:', error);
+            set(() => ({ suggestions: [] }), false, 'generateSuggestions');
+          }
         },
         
-        applySuggestion: (suggestionId: string) => {
+        applySuggestion: async (suggestionId: string) => {
           const { suggestions } = get()
           const suggestion = suggestions.find(s => s.id === suggestionId)
           if (!suggestion) return
@@ -555,7 +653,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
           switch (suggestion.type) {
             case 'moveEscapeRoom':
               if (suggestion.escapeRoomId && suggestion.targetDayIndex !== undefined) {
-                get().moveEscapeRoomBetweenDays(
+                await get().moveEscapeRoomBetweenDays(
                   suggestion.escapeRoomId,
                   suggestion.dayIndex,
                   suggestion.targetDayIndex
@@ -564,7 +662,7 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
               break
             case 'removeEscapeRoom':
               if (suggestion.escapeRoomId) {
-                get().removeEscapeRoomFromDay(suggestion.dayIndex, suggestion.escapeRoomId)
+                await get().removeEscapeRoomFromDay(suggestion.dayIndex, suggestion.escapeRoomId)
               }
               break
           }
@@ -606,6 +704,36 @@ export const useMultiDayPlannerStore = create<MultiDayPlannerState>()(
             'resetStore'
           )
         },
+
+        // State management methods
+        validateState: () => {
+          const { currentPlan } = get()
+          if (!currentPlan) return false
+
+          // Save current state as last valid state if validation passes
+          set((state) => ({ lastValidState: { ...state } }), false, 'saveLastValidState')
+          return true
+        },
+
+        saveState: () => {
+          const currentState = get()
+          set(() => ({ lastValidState: { ...currentState } }), false, 'saveState')
+        },
+
+        rollback: () => {
+          const { lastValidState } = get()
+          if (lastValidState) {
+            set(() => ({ ...lastValidState, lastValidState: null }), false, 'rollback')
+          }
+        },
+
+        lockEditing: () => {
+          set(() => ({ isEditing: true }), false, 'lockEditing')
+        },
+
+        unlockEditing: () => {
+          set(() => ({ isEditing: false }), false, 'unlockEditing')
+        },
       }),
       {
         name: 'multi-day-planner-store',
@@ -630,3 +758,10 @@ export const useTimeLimit = () => useMultiDayPlannerStore(state => state.timeLim
 export const useValidationErrors = () => useMultiDayPlannerStore(state => state.validationErrors)
 export const usePlanSuggestions = () => useMultiDayPlannerStore(state => state.suggestions)
 export const useIsDirty = () => useMultiDayPlannerStore(state => state.isDirty)
+export const useIsEditing = () => useMultiDayPlannerStore(state => state.isEditing)
+export const useHasLastValidState = () => useMultiDayPlannerStore(state => state.lastValidState !== null)
+export const useLoadingStates = () => useMultiDayPlannerStore(state => ({
+  isLoading: state.isLoading,
+  isCreating: state.isCreating,
+  isSaving: state.isSaving
+}))

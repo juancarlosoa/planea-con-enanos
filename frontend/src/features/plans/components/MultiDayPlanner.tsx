@@ -1,128 +1,125 @@
-import React, { useState, useEffect } from 'react'
-import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, Plus, Settings, List, Map } from 'lucide-react'
-import { Button, Card, Badge } from '@/shared/components'
-import { useMultiDayPlannerStore, useCurrentPlan, useSelectedDayIndex, usePlanSuggestions } from '@/shared/stores/multiDayPlannerStore'
-import MapComponent from '@/features/maps/components/MapComponent'
-import DayNavigator from './DayNavigator'
-import DayPlanner from './DayPlanner'
-import PlanSummary from './PlanSummary'
-import PlanSettings from './PlanSettings'
-import SuggestionPanel from './SuggestionPanel'
+import React, { useState, useEffect } from "react";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  AlertTriangle,
+  CheckCircle,
+  Settings,
+  List,
+  Map as MapIcon,
+} from "lucide-react";
+import NewPlanForm from "./NewPlanForm";
+import { Button, Card, Badge } from "@/shared/components";
+import {
+  useMultiDayPlannerStore,
+  useCurrentPlan,
+  useSelectedDayIndex,
+  usePlanSuggestions,
+} from "@/shared/stores/multiDayPlannerStore";
+import MapComponent from "@/features/maps/components/MapComponent";
+import DayNavigator from "./DayNavigator";
+import DayPlanner from "./DayPlanner";
+import PlanSummary from "./PlanSummary";
+import PlanSettings from "./PlanSettings";
+import SuggestionPanel from "./SuggestionPanel";
 
 interface MultiDayPlannerProps {
-  initialPlan?: any // Plan from backend
+  initialPlan?: any; // Plan from backend
 }
 
 const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
-  const [showSettings, setShowSettings] = useState(false)
-  const [showSummary, setShowSummary] = useState(false)
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
-  
-  const currentPlan = useCurrentPlan()
-  const selectedDayIndex = useSelectedDayIndex()
-  const suggestions = usePlanSuggestions()
-  
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+
+  const currentPlan = useCurrentPlan();
+  const selectedDayIndex = useSelectedDayIndex();
+  const suggestions = usePlanSuggestions();
+
   const {
     createNewPlan,
     loadPlan,
     selectDay,
     generateSuggestions,
-  } = useMultiDayPlannerStore()
+    clearCurrentPlan,
+  } = useMultiDayPlannerStore();
+
+  // Ensure we have a clean state when the component mounts
+  useEffect(() => {
+    clearCurrentPlan();
+  }, [clearCurrentPlan]);
 
   // Load initial plan if provided
   useEffect(() => {
     if (initialPlan && !currentPlan) {
-      loadPlan(initialPlan)
+      loadPlan(initialPlan);
     }
-  }, [initialPlan, currentPlan, loadPlan])
+  }, [initialPlan, currentPlan, loadPlan]);
 
   // Generate suggestions when plan changes
   useEffect(() => {
     if (currentPlan) {
-      generateSuggestions()
+      generateSuggestions();
     }
-  }, [currentPlan, generateSuggestions])
-
-  const handleCreateNewPlan = () => {
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    
-    createNewPlan(
-      'Mi Nuevo Plan',
-      'Plan de escape rooms multi-día',
-      today.toISOString().split('T')[0],
-      tomorrow.toISOString().split('T')[0]
-    )
-  }
+  }, [currentPlan, generateSuggestions]);
 
   const getTotalDays = () => {
-    if (!currentPlan) return 0
-    return currentPlan.dailyRoutes.length
-  }
+    return currentPlan?.dailyRoutes?.length ?? 0;
+  };
 
   const getTotalEscapeRooms = () => {
-    if (!currentPlan) return 0
-    return currentPlan.dailyRoutes.reduce((total, route) => total + route.stops.length, 0)
-  }
+    if (!currentPlan?.dailyRoutes) return 0;
+    return currentPlan.dailyRoutes.reduce(
+      (total, route) => total + (route?.stops?.length ?? 0),
+      0
+    );
+  };
 
   const getTotalTime = () => {
-    if (!currentPlan) return 0
-    // This would be calculated by the store
-    return currentPlan.dailyRoutes.reduce((total, route) => total + route.estimatedTotalTime, 0)
-  }
+    if (!currentPlan?.dailyRoutes) return 0;
+    return currentPlan.dailyRoutes.reduce(
+      (total, route) => total + (route?.estimatedTotalTime ?? 0),
+      0
+    );
+  };
 
   const getTotalCost = () => {
-    if (!currentPlan) return 0
-    return currentPlan.dailyRoutes.reduce((total, route) => total + route.estimatedCost, 0)
-  }
+    if (!currentPlan?.dailyRoutes) return 0;
+    return currentPlan.dailyRoutes.reduce(
+      (total, route) => total + (route?.estimatedCost ?? 0),
+      0
+    );
+  };
 
   const getValidationStatus = () => {
-    if (!currentPlan) return { isValid: true, issues: 0 }
-    
-    let issues = 0
-    currentPlan.dailyRoutes.forEach((_, index) => {
-      const store = useMultiDayPlannerStore.getState()
-      if (!store.validateDayTime(index)) {
-        issues++
-      }
-    })
-    
-    return { isValid: issues === 0, issues }
-  }
+    if (!currentPlan?.dailyRoutes?.length) {
+      return { isValid: true, issues: 0 };
+    }
+
+    const store = useMultiDayPlannerStore.getState();
+    const issues = currentPlan.dailyRoutes.reduce((total, _, index) => {
+      return total + (store.validateDayTime(index) ? 0 : 1);
+    }, 0);
+
+    return { isValid: issues === 0, issues };
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  }
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-ES", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
   if (!currentPlan) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
-        <div className="text-center">
-          <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Crear Plan Multi-día
-          </h3>
-          <p className="text-gray-600 mb-6 max-w-md">
-            Planifica tu aventura de escape rooms a lo largo de varios días. 
-            Organiza rutas optimizadas para cada día de tu viaje.
-          </p>
-        </div>
-        <Button onClick={handleCreateNewPlan} size="lg">
-          <Plus className="h-4 w-4 mr-2" />
-          Crear Nuevo Plan
-        </Button>
-      </div>
-    )
+    return <NewPlanForm onCreatePlan={createNewPlan} />;
   }
 
-  const validationStatus = getValidationStatus()
+  const validationStatus = getValidationStatus();
 
   return (
     <div className="space-y-6">
@@ -135,7 +132,7 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
           {currentPlan.description && (
             <p className="text-gray-600 mb-4">{currentPlan.description}</p>
           )}
-          
+
           {/* Plan Stats */}
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
             <div className="flex items-center">
@@ -155,7 +152,7 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Validation Status */}
           {validationStatus.isValid ? (
@@ -166,10 +163,11 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
           ) : (
             <Badge variant="warning" className="flex items-center">
               <AlertTriangle className="h-3 w-3 mr-1" />
-              {validationStatus.issues} Problema{validationStatus.issues !== 1 ? 's' : ''}
+              {validationStatus.issues} Problema
+              {validationStatus.issues !== 1 ? "s" : ""}
             </Badge>
           )}
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -178,7 +176,7 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
             <Settings className="h-4 w-4 mr-2" />
             Configurar
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -190,9 +188,7 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
       </div>
 
       {/* Suggestions Panel */}
-      {suggestions.length > 0 && (
-        <SuggestionPanel suggestions={suggestions} />
-      )}
+      {suggestions.length > 0 && <SuggestionPanel suggestions={suggestions} />}
 
       {/* Main Content */}
       <div className="space-y-6">
@@ -214,17 +210,24 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
         <Card>
           <Card.Header>
             <div className="flex items-center justify-between">
-              <Card.Title>Día {selectedDayIndex + 1} - {formatDate(currentPlan.dailyRoutes[selectedDayIndex]?.date)}</Card.Title>
-              
+              <Card.Title>
+                {currentPlan.dailyRoutes?.[selectedDayIndex]
+                  ? `Día ${selectedDayIndex + 1} - ${formatDate(
+                      currentPlan.dailyRoutes[selectedDayIndex].date
+                    )}`
+                  : "Día no disponible"}
+              </Card.Title>
+
               {/* View Toggle Buttons */}
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => setViewMode("list")}
                   className={`
                     flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
-                    ${viewMode === 'list' 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                    ${
+                      viewMode === "list"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
                     }
                   `}
                 >
@@ -232,59 +235,109 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
                   Lista
                 </button>
                 <button
-                  onClick={() => setViewMode('map')}
+                  onClick={() => setViewMode("map")}
                   className={`
                     flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
-                    ${viewMode === 'map' 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                    ${
+                      viewMode === "map"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
                     }
                   `}
                 >
-                  <Map className="h-4 w-4 mr-2" />
+                  <MapIcon className="h-4 w-4 mr-2" />
                   Mapa
                 </button>
               </div>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              {viewMode === 'list' 
-                ? 'Gestiona los escape rooms de este día' 
-                : 'Visualización de la ruta en el mapa'
-              }
+              {viewMode === "list"
+                ? "Gestiona los escape rooms de este día"
+                : "Visualización de la ruta en el mapa"}
             </p>
           </Card.Header>
-          
-          <Card.Content className={viewMode === 'map' ? 'p-0' : ''}>
-            {viewMode === 'list' ? (
+
+          <Card.Content className={viewMode === "map" ? "p-0" : ""}>
+            {viewMode === "list" ? (
               <div className="space-y-4">
                 {/* Day Stats */}
                 <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-1" />
-                    <span>{currentPlan.dailyRoutes[selectedDayIndex]?.stops.length || 0} paradas</span>
+                    <span>
+                      {currentPlan.dailyRoutes?.[selectedDayIndex]?.stops
+                        ?.length ?? 0}{" "}
+                      paradas
+                    </span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <Clock className="h-4 w-4 mr-1" />
-                    <span>{Math.round(getTotalTime() / 60)} horas estimadas</span>
+                    <span>
+                      {Math.round(getTotalTime() / 60)} horas estimadas
+                    </span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
-                    <span>€{currentPlan.dailyRoutes[selectedDayIndex]?.estimatedCost.toFixed(2) || '0.00'}</span>
+                    <span>
+                      €
+                      {currentPlan.dailyRoutes?.[
+                        selectedDayIndex
+                      ]?.estimatedCost?.toFixed(2) ?? "0.00"}
+                    </span>
                   </div>
                 </div>
-                
+
                 <DayPlanner
                   dayIndex={selectedDayIndex}
-                  dailyRoute={currentPlan.dailyRoutes[selectedDayIndex]}
+                  dailyRoute={currentPlan.dailyRoutes?.[selectedDayIndex]}
                   showHeader={false}
                 />
               </div>
             ) : (
               <div className="h-[600px]">
-                <MapComponent
-                  escapeRooms={currentPlan.dailyRoutes[selectedDayIndex]?.stops?.map(stop => stop.escapeRoom).filter(Boolean) || []}
-                  selectedRoute={null}
-                  onEscapeRoomSelect={() => {}}
-                />
+                {(() => {
+                  // Verificamos que tengamos acceso válido a las rutas del día
+                  if (!currentPlan.dailyRoutes?.[selectedDayIndex]) {
+                    return (
+                      <div className="text-center py-4 text-gray-500">
+                        No hay información disponible para este día
+                      </div>
+                    );
+                  }
+
+                  const currentStops =
+                    currentPlan.dailyRoutes[selectedDayIndex].stops;
+                  if (!currentStops?.length) {
+                    return (
+                      <div className="text-center py-4 text-gray-500">
+                        No hay escape rooms seleccionados para este día
+                      </div>
+                    );
+                  }
+
+                  const escapeRooms = currentStops
+                    .map((stop) => stop.escapeRoom)
+                    .filter(
+                      (er): er is NonNullable<typeof er> =>
+                        er !== undefined && er !== null
+                    );
+
+                  if (!escapeRooms.length) {
+                    return (
+                      <div className="text-center py-4 text-gray-500">
+                        No se pudieron cargar los detalles de los escape rooms
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <MapComponent
+                      escapeRooms={escapeRooms}
+                      selectedEscapeRooms={escapeRooms} // Marcamos todos los escape rooms del día como seleccionados
+                      onEscapeRoomSelect={() => {}}
+                      showRoute={true} // Para mostrar la ruta entre los escape rooms
+                    />
+                  );
+                })()}
               </div>
             )}
           </Card.Content>
@@ -301,13 +354,10 @@ const MultiDayPlanner: React.FC<MultiDayPlannerProps> = ({ initialPlan }) => {
 
       {/* Summary Modal */}
       {showSummary && (
-        <PlanSummary
-          plan={currentPlan}
-          onClose={() => setShowSummary(false)}
-        />
+        <PlanSummary plan={currentPlan} onClose={() => setShowSummary(false)} />
       )}
     </div>
-  )
-}
+  );
+};
 
-export default MultiDayPlanner
+export default MultiDayPlanner;

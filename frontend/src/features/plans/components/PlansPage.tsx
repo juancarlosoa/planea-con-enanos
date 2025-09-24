@@ -1,13 +1,22 @@
-import { Calendar, MapPin, Clock, Users, Share2, Edit, Trash2, Plus } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { Button, Card, Badge } from '@/shared/components'
-import MultiDayPlanner from './MultiDayPlanner'
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
+  Share2,
+  Edit,
+  Trash2,
+  Plus,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Button, Card, Badge } from "@/shared/components";
+import MultiDayPlanner from "./MultiDayPlanner";
 
 const PlansPage = () => {
-  const navigate = useNavigate()
-  const [showPlanner, setShowPlanner] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState(null)
+  const navigate = useNavigate();
+  const [showPlanner, setShowPlanner] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
 
   // Mock data for demonstration
   const mockPlans = [
@@ -18,7 +27,7 @@ const PlansPage = () => {
       escapeRooms: 4,
       duration: "6 horas",
       participants: 6,
-      status: "upcoming"
+      status: "upcoming",
     },
     {
       id: 2,
@@ -27,50 +36,49 @@ const PlansPage = () => {
       escapeRooms: 3,
       duration: "4 horas",
       participants: 4,
-      status: "completed"
-    }
-  ]
+      status: "completed",
+    },
+  ];
 
   const getStatusBadge = (status: string) => {
-    if (status === 'upcoming') {
-      return <Badge variant="primary">Próximo</Badge>
+    if (status === "upcoming") {
+      return <Badge variant="primary">Próximo</Badge>;
     }
-    return <Badge variant="success">Completado</Badge>
-  }
+    return <Badge variant="success">Completado</Badge>;
+  };
 
   const handleCreatePlan = () => {
-    setSelectedPlan(null)
-    setShowPlanner(true)
-  }
+    setSelectedPlan(null);
+    setShowPlanner(true);
+  };
 
   const handleEditPlan = (planId: number) => {
     // TODO: Load plan data and set it
-    setSelectedPlan(null) // Would be the loaded plan
-    setShowPlanner(true)
-  }
+    setSelectedPlan(planId); // Would be the loaded plan
+    setShowPlanner(true);
+  };
 
   const handleSharePlan = (planId: number) => {
-    console.log('Sharing plan:', planId)
+    console.log("Sharing plan:", planId);
     // TODO: Implement share functionality
-  }
+  };
 
   const handleDeletePlan = (planId: number) => {
-    console.log('Deleting plan:', planId)
+    console.log("Deleting plan:", planId);
     // TODO: Implement delete functionality
-  }
+  };
 
   const handleViewDetails = (planId: number) => {
-    console.log('Viewing plan details:', planId)
-    // TODO: Navigate to plan details
-  }
+    navigate(`/plans/${planId}`);
+  };
 
   // Show multi-day planner if requested
   if (showPlanner) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => setShowPlanner(false)}
             className="text-gray-600 hover:text-gray-900"
           >
@@ -79,7 +87,7 @@ const PlansPage = () => {
         </div>
         <MultiDayPlanner initialPlan={selectedPlan} />
       </div>
-    )
+    );
   }
 
   return (
@@ -108,7 +116,8 @@ const PlansPage = () => {
             No tienes planes aún
           </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Comienza creando tu primera ruta de escape rooms y planifica aventuras increíbles
+            Comienza creando tu primera ruta de escape rooms y planifica
+            aventuras increíbles
           </p>
           <Button onClick={handleCreatePlan} size="lg">
             <Plus className="h-4 w-4 mr-2" />
@@ -134,25 +143,25 @@ const PlansPage = () => {
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>
-                      {new Date(plan.date).toLocaleDateString('es-ES', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
+                      {new Date(plan.date).toLocaleDateString("es-ES", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
                       })}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>{plan.escapeRooms} escape rooms</span>
                   </div>
-                  
+
                   <div className="flex items-center text-sm text-gray-600">
                     <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>{plan.duration}</span>
                   </div>
-                  
+
                   <div className="flex items-center text-sm text-gray-600">
                     <Users className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>{plan.participants} participantes</span>
@@ -203,7 +212,7 @@ const PlansPage = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default PlansPage
+export default PlansPage;
