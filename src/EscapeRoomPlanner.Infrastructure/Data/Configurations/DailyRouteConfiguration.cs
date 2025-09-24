@@ -13,9 +13,9 @@ public class DailyRouteConfiguration : IEntityTypeConfiguration<DailyRoute>
         
         builder.HasKey(dr => dr.Id);
         
+        // Properties
         builder.Property(dr => dr.Date)
-            .IsRequired()
-            .HasColumnType("date");
+            .IsRequired();
             
         builder.Property(dr => dr.PlanId)
             .IsRequired();
@@ -37,24 +37,22 @@ public class DailyRouteConfiguration : IEntityTypeConfiguration<DailyRoute>
             .IsRequired()
             .HasConversion<string>()
             .HasDefaultValue(MultiModalStrategy.SingleMode);
-
-        // Configure base entity properties
-        builder.Property(dr => dr.CreatedAt)
-            .IsRequired();
+        
+        // Relationships
+        builder.HasOne<Plan>()
+            .WithMany(p => p.DailyRoutes)
+            .HasForeignKey(dr => dr.PlanId)
+            .OnDelete(DeleteBehavior.Cascade);
             
-        builder.Property(dr => dr.UpdatedAt)
-            .IsRequired();
-
-        // Configure relationship with RouteStops
         builder.HasMany(dr => dr.Stops)
             .WithOne()
             .HasForeignKey(rs => rs.DailyRouteId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // Indexes for better query performance
+        
+        // Indexes
         builder.HasIndex(dr => dr.PlanId);
         builder.HasIndex(dr => dr.Date);
         builder.HasIndex(dr => new { dr.PlanId, dr.Date })
-            .IsUnique(); // Each plan can have only one route per date
+            .IsUnique();
     }
 }

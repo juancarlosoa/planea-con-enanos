@@ -1,4 +1,3 @@
-using EscapeRoomPlanner.Application.Features.Routes.Commands;
 using EscapeRoomPlanner.Application.Features.Routes.DTOs;
 using EscapeRoomPlanner.Domain.Enums;
 using EscapeRoomPlanner.Domain.Interfaces;
@@ -39,8 +38,16 @@ public static partial class RouteMapper
     // Coordinates mappings
     public static partial CoordinatesDto ToCoordinatesDto(Coordinates coordinates);
     public static partial List<CoordinatesDto> ToCoordinatesDto(List<Coordinates> coordinates);
-    public static partial Coordinates ToCoordinates(CoordinatesDto dto);
-    public static partial List<Coordinates> ToCoordinates(List<CoordinatesDto> dtos);
+    
+    public static Coordinates ToCoordinates(CoordinatesDto dto)
+    {
+        return new Coordinates(dto.Latitude, dto.Longitude);
+    }
+    
+    public static List<Coordinates> ToCoordinates(List<CoordinatesDto> dtos)
+    {
+        return dtos.Select(ToCoordinates).ToList();
+    }
 
     // RoutePreferences mappings
     public static RoutePreferences ToRoutePreferences(RoutePreferencesDto dto)

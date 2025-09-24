@@ -1,39 +1,34 @@
+using Riok.Mapperly.Abstractions;
 using EscapeRoomPlanner.Application.Features.Plans.DTOs;
-using EscapeRoomPlanner.Application.Features.Routes.DTOs;
 using EscapeRoomPlanner.Application.Features.Routes.Mappers;
 using EscapeRoomPlanner.Domain.Entities;
 using EscapeRoomPlanner.Domain.Enums;
-using Riok.Mapperly.Abstractions;
 
 namespace EscapeRoomPlanner.Application.Features.Plans.Mappers;
 
 [Mapper]
 public static partial class PlanMapper
 {
-    // Entity to DTO mappings
+    // Plan entity to DTO mapping
     public static partial PlanDto ToDto(Plan plan);
     public static partial List<PlanDto> ToDto(List<Plan> plans);
-    public static partial IEnumerable<PlanDto> ToDto(IEnumerable<Plan> plans);
-
-    // DTO to Entity mappings
-    public static Plan ToEntity(CreatePlanDto dto)
-    {
-        return new Plan(
-            dto.Name,
-            dto.Description,
-            dto.StartDate,
-            dto.EndDate,
-            dto.CreatedBy
-        );
-    }
-
-    // Custom enum mappings
+    
+    // Custom mapping for Status enum
     [MapProperty(nameof(Plan.Status), nameof(PlanDto.Status))]
-    private static string MapStatusToString(PlanStatus status) => status.ToString();
-
-    // Custom collection mappings for DailyRoutes
-    public static List<DailyRouteDto> MapDailyRoutesToDto(IReadOnlyList<DailyRoute> dailyRoutes)
+    private static string MapStatus(PlanStatus status) => status.ToString();
+    
+    // Custom mapping for DailyRoutes
+    [MapProperty(nameof(Plan.DailyRoutes), nameof(PlanDto.DailyRoutes))]
+    private static List<Routes.DTOs.DailyRouteDto> MapDailyRoutes(IReadOnlyList<DailyRoute> dailyRoutes)
     {
         return dailyRoutes.Select(DailyRouteMapper.ToDto).ToList();
     }
+    
+    // Creation mapping (DTO to entity)
+    [MapperIgnoreTarget(nameof(Plan.Id))]
+    [MapperIgnoreTarget(nameof(Plan.CreatedAt))]
+    [MapperIgnoreTarget(nameof(Plan.UpdatedAt))]
+    [MapperIgnoreTarget(nameof(Plan.DailyRoutes))]
+    [MapperIgnoreTarget(nameof(Plan.Status))]
+    public static partial Plan ToEntity(CreatePlanDto dto);
 }

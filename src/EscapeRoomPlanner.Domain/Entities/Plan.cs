@@ -33,18 +33,25 @@ public class Plan : BaseEntity
         CreatedBy = createdBy;
         Status = PlanStatus.Draft;
 
-        // Initialize daily routes for each day in the date range
-        InitializeDailyRoutes();
+        // Daily routes will be initialized after the entity is saved and has an Id
     }
 
-    private void InitializeDailyRoutes()
+    public void InitializeDailyRoutes()
     {
+        if (_dailyRoutes.Any()) return; // Already initialized
+        
         var currentDate = StartDate;
         while (currentDate <= EndDate)
         {
             _dailyRoutes.Add(new DailyRoute(currentDate, Id));
             currentDate = currentDate.AddDays(1);
         }
+    }
+    
+    private void RecreateRoutes()
+    {
+        _dailyRoutes.Clear();
+        InitializeDailyRoutes();
     }
 
     public void UpdateBasicInfo(string name, string description)
@@ -66,8 +73,7 @@ public class Plan : BaseEntity
         EndDate = endDate;
         
         // Recreate daily routes for new date range
-        _dailyRoutes.Clear();
-        InitializeDailyRoutes();
+        RecreateRoutes();
         
         UpdateTimestamp();
     }

@@ -1,9 +1,13 @@
 import { Calendar, MapPin, Clock, Users, Share2, Edit, Trash2, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { Button, Card, Badge } from '@/shared/components'
+import MultiDayPlanner from './MultiDayPlanner'
 
 const PlansPage = () => {
   const navigate = useNavigate()
+  const [showPlanner, setShowPlanner] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState(null)
 
   // Mock data for demonstration
   const mockPlans = [
@@ -35,12 +39,14 @@ const PlansPage = () => {
   }
 
   const handleCreatePlan = () => {
-    navigate('/planner')
+    setSelectedPlan(null)
+    setShowPlanner(true)
   }
 
   const handleEditPlan = (planId: number) => {
-    console.log('Editing plan:', planId)
-    // TODO: Implement edit functionality
+    // TODO: Load plan data and set it
+    setSelectedPlan(null) // Would be the loaded plan
+    setShowPlanner(true)
   }
 
   const handleSharePlan = (planId: number) => {
@@ -56,6 +62,24 @@ const PlansPage = () => {
   const handleViewDetails = (planId: number) => {
     console.log('Viewing plan details:', planId)
     // TODO: Navigate to plan details
+  }
+
+  // Show multi-day planner if requested
+  if (showPlanner) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            onClick={() => setShowPlanner(false)}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            ← Volver a Mis Planes
+          </Button>
+        </div>
+        <MultiDayPlanner initialPlan={selectedPlan} />
+      </div>
+    )
   }
 
   return (

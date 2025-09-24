@@ -4,7 +4,7 @@ namespace EscapeRoomPlanner.Domain.Interfaces;
 
 public interface IDailyRouteRepository : IRepository<DailyRoute>
 {
-    Task<IEnumerable<DailyRoute>> GetRoutesByPlanAsync(Guid planId, CancellationToken cancellationToken = default);
-    Task<DailyRoute?> GetRouteByDateAsync(Guid planId, DateOnly date, CancellationToken cancellationToken = default);
-    Task<DailyRoute?> GetRouteWithStopsAsync(Guid routeId, CancellationToken cancellationToken = default);
+    Task<List<DailyRoute>> GetRoutesByPlanIdAsync(Guid planId);
+    Task<DailyRoute?> GetRouteByPlanAndDateAsync(Guid planId, DateOnly date);
+    Task<List<DailyRoute>> GetRoutesByDateRangeAsync(DateOnly startDate, DateOnly endDate);
 }
