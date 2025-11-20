@@ -1,0 +1,6 @@
+@PCE.Modules_HostAddress = http://localhost:5173
+
+GET {{PCE.Modules_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
