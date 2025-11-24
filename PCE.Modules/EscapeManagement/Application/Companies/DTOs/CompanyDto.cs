@@ -3,7 +3,6 @@ using PCE.Modules.EscapeManagement.Application.EscapeRooms.DTOs;
 namespace PCE.Modules.EscapeManagement.Application.Companies.DTOs;
 
 public record CompanyDto(
-    Guid Id,
     string Slug,
     string Name,
     string Email,
