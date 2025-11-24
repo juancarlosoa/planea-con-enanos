@@ -2,6 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using PCE.Modules.EscapeManagement.Domain.EscapeRooms.Entities;
 using PCE.Modules.EscapeManagement.Domain.EscapeRooms.Repositories;
 using PCE.Modules.EscapeManagement.Infrastructure.Persistence;
+using PCE.Shared.Abstractions.Domain;
+
+namespace PCE.Modules.EscapeManagement.Infrastructure.Repositories.EscapeRooms;
 
 public class EscapeRoomRepository : IEscapeRoomRepository
 {
@@ -12,36 +15,27 @@ public class EscapeRoomRepository : IEscapeRoomRepository
         _context = context;
     }
 
-    public Task AddAsync(EscapeRoom entity, CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task AddAsync(EscapeRoom entity, CancellationToken ct = default)
+        => await _context.EscapeRooms.AddAsync(entity, ct);
 
-    public Task<EscapeRoom?> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<EscapeRoom?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => await _context.EscapeRooms
+            .FirstOrDefaultAsync(e => e.Id == id, ct);
 
     public async Task<EscapeRoom?> GetBySlugAsync(string slug, CancellationToken ct = default)
-        => await _context.EscapeRooms.FirstOrDefaultAsync(c => c.Slug.Value == slug, ct);
+        => await _context.EscapeRooms
+            .FirstOrDefaultAsync(e => e.Slug == Slug.Create(slug), ct);
 
-    public Task<List<EscapeRoom>> ListAsync(CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<List<EscapeRoom>> ListAsync(CancellationToken ct = default)
+        => await _context.EscapeRooms
+            .ToListAsync(ct);
 
     public void Remove(EscapeRoom entity)
-    {
-        throw new NotImplementedException();
-    }
+        => _context.EscapeRooms.Remove(entity);
 
-    public Task<bool> SlugExistsAsync(string slug, CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<bool> SlugExistsAsync(string slug, CancellationToken ct = default)
+        => await _context.EscapeRooms.AnyAsync(e => e.Slug == Slug.Create(slug), ct);
 
     public void Update(EscapeRoom entity)
-    {
-        throw new NotImplementedException();
-    }
+        => _context.EscapeRooms.Update(entity);
 }
