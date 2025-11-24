@@ -75,7 +75,7 @@ public class CompaniesController : ControllerBase
             : BadRequest(new { error = result.Error });
     }
 
-    [HttpGet("{slug}/escaperooms")]
+    [HttpGet("{slug}/rooms")]
     public async Task<IActionResult> GetEscapeRoomsByCompany(string slug, CancellationToken ct)
     {
         var result = await _mediator.Send(new GetEscapeRoomsByCompanyQuery(slug), ct);

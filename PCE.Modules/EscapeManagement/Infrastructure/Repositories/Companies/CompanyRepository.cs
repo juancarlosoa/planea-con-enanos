@@ -26,7 +26,7 @@ public class CompanyRepository : ICompanyRepository
         => await _context.Companies.Include(c => c.EscapeRooms).FirstOrDefaultAsync(c => c.Id == id, ct);
 
     public async Task<List<Company>> ListAsync(CancellationToken ct = default)
-        => await _context.Companies.Include(c => c.EscapeRooms).ToListAsync(ct);
+        => await _context.Companies.ToListAsync(ct);
 
     public async Task<Company?> GetBySlugAsync(string slug, CancellationToken ct = default)
         => await _context.Companies.Include(c => c.EscapeRooms).FirstOrDefaultAsync(c => c.Slug == Slug.Create(slug), ct);

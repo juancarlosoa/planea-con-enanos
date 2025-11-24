@@ -9,7 +9,7 @@ using PCE.Modules.EscapeManagement.Application.EscapeRooms.Update;
 namespace PCE.Modules.EscapeManagement.Api.EscapeRooms;
 
 [ApiController]
-[Route("api/escaperooms")]
+[Route("api/rooms")]
 public class EscapeRoomController : ControllerBase
 {
     private readonly IMediator _mediator;

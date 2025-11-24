@@ -7,5 +7,7 @@ namespace PCE.Modules.EscapeManagement.Application.EscapeRooms.Mappers;
 [Mapper]
 public partial class EscapeRoomMapper
 {
+    [MapProperty(nameof(EscapeRoom.Company.Slug.Value), nameof(EscapeRoomDto.CompanySlug))]
+    [MapProperty(nameof(EscapeRoom.Slug.Value), nameof(EscapeRoomDto.Slug))]
     public partial EscapeRoomDto MapToDto(EscapeRoom escapeRoom);
 }

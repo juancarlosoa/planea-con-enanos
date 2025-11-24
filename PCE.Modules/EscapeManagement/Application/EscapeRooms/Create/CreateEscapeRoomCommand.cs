@@ -11,4 +11,4 @@ public record CreateEscapeRoomCommand(
     int DurationMinutes,
     string DifficultyLevel,
     decimal PricePerPerson,
-    Guid CompanyId) : IRequest<Result<string>>;
+    string CompanySlug) : IRequest<Result<string>>;
