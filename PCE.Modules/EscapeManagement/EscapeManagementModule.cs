@@ -8,6 +8,7 @@ using PCE.Shared.Abstractions.Persistence;
 using PCE.Modules.EscapeManagement.Infrastructure.Repositories.Companies;
 using PCE.Modules.EscapeManagement.Application.Companies.Mappers;
 using PCE.Modules.EscapeManagement.Application.EscapeRooms.Mappers;
+using PCE.Modules.EscapeManagement.Infrastructure.Repositories.EscapeRooms;
 
 namespace PCE.Modules.EscapeManagement;
 
@@ -17,7 +18,10 @@ public static class EscapeManagementModule
     {
         services.AddDbContext<EscapeManagementDbContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("EscapeManagement"));
+            options.UseNpgsql(configuration.GetConnectionString("EscapeManagement"), npgsqlOptions =>
+            {
+                npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+            });
         });
 
         services.AddScoped<ICompanyRepository, CompanyRepository>();

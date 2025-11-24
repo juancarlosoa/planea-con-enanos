@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using PCE.Shared.DependencyInjection;
 using PCE.Modules.EscapeManagement;
 
@@ -22,5 +23,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PCE.Modules.EscapeManagement.Infrastructure.Persistence.EscapeManagementDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.Run();

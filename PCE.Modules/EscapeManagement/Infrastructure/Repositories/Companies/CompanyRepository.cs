@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PCE.Modules.EscapeManagement.Domain.Companies.Entities;
 using PCE.Modules.EscapeManagement.Domain.Companies.Repositories;
 using PCE.Modules.EscapeManagement.Infrastructure.Persistence;
+using PCE.Shared.Abstractions.Domain;
 
 namespace PCE.Modules.EscapeManagement.Infrastructure.Repositories.Companies;
 
@@ -28,10 +29,10 @@ public class CompanyRepository : ICompanyRepository
         => await _context.Companies.Include(c => c.EscapeRooms).ToListAsync(ct);
 
     public async Task<Company?> GetBySlugAsync(string slug, CancellationToken ct = default)
-        => await _context.Companies.Include(c => c.EscapeRooms).FirstOrDefaultAsync(c => c.Slug.Value == slug, ct);
+        => await _context.Companies.Include(c => c.EscapeRooms).FirstOrDefaultAsync(c => c.Slug == Slug.Create(slug), ct);
 
     public async Task<bool> SlugExistsAsync(string slug, CancellationToken ct = default)
-        => await _context.Companies.AnyAsync(c => c.Slug.Value == slug, ct);
+        => await _context.Companies.AnyAsync(c => c.Slug == Slug.Create(slug), ct);
 
     public async Task<Company?> GetByEmailAsync(string email, CancellationToken ct = default)
         => await _context.Companies.FirstOrDefaultAsync(c => c.Email == email, ct);

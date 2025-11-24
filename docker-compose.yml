@@ -33,6 +33,7 @@ services:
         condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__EscapeManagement=Host=postgres;Database=${ESCAPE_MANAGEMENT_DB};Username=${DB_USER};Password=${DB_PASSWORD}
     ports:
       - "5000:5000"
 
