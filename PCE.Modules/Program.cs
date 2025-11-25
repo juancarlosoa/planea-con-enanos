@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PCE.Shared.DependencyInjection;
 using PCE.Modules.EscapeManagement;
+using PCE.Modules.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<InternalSecurityMiddleware>();
 
 app.MapControllers();
 

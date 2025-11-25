@@ -1,16 +1,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiamos únicamente lo necesario
 COPY planea-con-enanos.sln ./
 COPY PCE.Modules/PCE.Modules.csproj PCE.Modules/
 COPY PCE.Shared/PCE.Shared.csproj PCE.Shared/
 
-# Restauramos primero
-RUN dotnet restore
+RUN dotnet restore PCE.Modules/PCE.Modules.csproj
 
-# Copiamos el resto del código
-COPY . .
+COPY PCE.Modules/. PCE.Modules/
+COPY PCE.Shared/. PCE.Shared/
 
 RUN dotnet publish PCE.Modules/PCE.Modules.csproj -c Release -o /app
 
