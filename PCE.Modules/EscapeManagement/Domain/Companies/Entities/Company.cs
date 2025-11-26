@@ -6,14 +6,6 @@ namespace PCE.Modules.EscapeManagement.Domain.Companies.Entities;
 
 public class Company : BaseEntity
 {
-using PCE.Modules.EscapeManagement.Domain.EscapeRooms.Entities;
-using PCE.Shared.Abstractions.Domain;
-using PCE.Shared.Data;
-
-namespace PCE.Modules.EscapeManagement.Domain.Companies.Entities;
-
-public class Company : BaseEntity
-{
     public Slug Slug { get; private set; } = null!;
     public string Name { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
