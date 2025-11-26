@@ -14,18 +14,15 @@ COPY . .
 # Compilar la aplicación Vue
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
-WORKDIR /app
+# Production stage: use nginx to serve static assets and proxy API
+FROM nginx:alpine
 
-# Instalar serve para servir la aplicación
-RUN npm install -g serve
+# Remove default nginx config and add our own
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copiar archivos construidos del stage anterior
-COPY --from=build /app/dist ./dist
+# Copy built assets
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Exponer puerto
-EXPOSE 3000
+EXPOSE 80
 
-# Iniciar la aplicación
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["nginx", "-g", "daemon off;"]

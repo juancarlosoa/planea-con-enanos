@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue';
 import LeafletMap from './components/Maps/LeafletMap.vue';
 import { escapeRoomService } from './services/escapeRoomService';
-import { API_BASE_URL } from './config/api';
 import type { EscapeRoomDto } from './types/models';
 
 const rooms = ref<EscapeRoomDto[]>([]);
@@ -12,8 +11,7 @@ const debugInfo = ref<string>('');
 
 onMounted(async () => {
   // Mostrar información de depuración
-  debugInfo.value = `Conectando a: ${API_BASE_URL}/rooms`;
-  console.log('📍 API Base URL:', API_BASE_URL);
+  debugInfo.value = `Conectando a: /api/rooms`;
   console.log('🌍 Frontend URL:', window.location.href);
   
   try {
@@ -22,6 +20,25 @@ onMounted(async () => {
     rooms.value = await escapeRoomService.getAllRooms();
     console.log('✅ Salas recibidas:', rooms.value);
     debugInfo.value += ` ✅ (${rooms.value.length} salas cargadas)`;
+    
+    const nuevaSala = ref<EscapeRoomDto>({
+            slug: 'atraco',
+            name: 'atraco',
+            description: 'atracoooo',
+            maxPlayers: 0,
+            minPlayers: 0,
+            durationMinutes: 0,
+            difficultyLevel: 'Fácil',
+            pricePerPerson: 0,
+            isActive: true,
+            companySlug: '',
+            latitude: 37.9703755,
+            longitude: -1.2233186,
+            createdAt: "",
+            updatedAt: null});
+
+    rooms.value = [nuevaSala.value];
+    
   } catch (err) {
     error.value = 'Error al cargar las salas del backend';
     console.error('❌ Error:', err);

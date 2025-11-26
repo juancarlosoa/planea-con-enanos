@@ -4,9 +4,14 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import L from 'leaflet';
+import L, { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { EscapeRoomMapDto } from '../../types/models';
+
+// Import marker icons for Leaflet
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 const props = defineProps<{
   rooms: EscapeRoomMapDto[];
@@ -14,6 +19,19 @@ const props = defineProps<{
 
 const map = ref<L.Map | null>(null);
 const markers = ref<L.Marker[]>([]);
+
+type DefaultIconOptions = Icon.Default & {
+  _getIconUrl?: string;
+};
+
+delete (Icon.Default.prototype as DefaultIconOptions)._getIconUrl;
+
+Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
 
 onMounted(() => {
   // Inicializar el mapa
