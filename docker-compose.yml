@@ -35,7 +35,6 @@ services:
       - app
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://0.0.0.0:8080
       - INTERNAL_SECRET=${INTERNAL_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
 
@@ -50,7 +49,6 @@ services:
         condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://0.0.0.0:5000
       - ConnectionStrings__EscapeManagement=Host=postgres;Database=${ESCAPE_MANAGEMENT_DB};Username=${DB_USER};Password=${DB_PASSWORD}
       - INTERNAL_SECRET=${INTERNAL_SECRET}
 
@@ -60,11 +58,17 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - gateway
     environment:
       - NODE_ENV=production
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   pgdata:
+  data_protection_keys:
