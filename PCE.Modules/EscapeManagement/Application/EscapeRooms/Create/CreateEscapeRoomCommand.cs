@@ -12,5 +12,4 @@ public record CreateEscapeRoomCommand(
     string DifficultyLevel,
     decimal PricePerPerson,
     string CompanySlug,
-    double Latitude,
-    double Longitude) : IRequest<Result<string>>;
+    string Address) : IRequest<Result<string>>;

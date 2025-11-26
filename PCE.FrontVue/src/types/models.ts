@@ -13,6 +13,7 @@ export interface EscapeRoomDto {
   updatedAt: string | null;
   latitude: number;
   longitude: number;
+  address: string;
 }
 
 // Interfaz extendida para el mapa con coordenadas (ahora redundante pero útil para futuro)
@@ -29,6 +30,8 @@ export interface CompanyDto {
   website: string | null;
   createdAt: string;
   updatedAt: string | null;
+  latitude: number;
+  longitude: number;
   escapeRooms: EscapeRoomDto[];
 }
 
@@ -41,6 +44,7 @@ export interface CreateEscapeRoomRequest {
   difficultyLevel: string;
   pricePerPerson: number;
   companySlug: string;
+  address: string;
 }
 
 export interface UpdateEscapeRoomRequest {
@@ -52,6 +56,7 @@ export interface UpdateEscapeRoomRequest {
   durationMinutes: number;
   difficultyLevel: string;
   pricePerPerson: number;
+  address: string;
 }
 
 export interface CreateCompanyRequest {

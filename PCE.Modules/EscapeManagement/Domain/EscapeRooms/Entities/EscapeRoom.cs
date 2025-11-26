@@ -17,6 +17,7 @@ public class EscapeRoom : BaseEntity
     public bool IsActive { get; private set; }
     public double Latitude { get; private set; }
     public double Longitude { get; private set; }
+    public string Address { get; private set; } = string.Empty;
 
     public Guid CompanyId { get; private set; }
     public Company Company { get; private set; } = null!;
@@ -33,7 +34,8 @@ public class EscapeRoom : BaseEntity
         decimal pricePerPerson,
         Guid companyId,
         double latitude,
-        double longitude)
+        double longitude,
+        string address)
     {
         var id = Guid.NewGuid();
         var slug = Slug.Create(name);
@@ -53,6 +55,7 @@ public class EscapeRoom : BaseEntity
             IsActive = true,
             Latitude = latitude,
             Longitude = longitude,
+            Address = address,
             CreatedAt = DateTime.UtcNow
         };
     }
@@ -64,7 +67,10 @@ public class EscapeRoom : BaseEntity
         int minPlayers,
         int durationMinutes,
         string difficultyLevel,
-        decimal pricePerPerson)
+        decimal pricePerPerson,
+        double latitude,
+        double longitude,
+        string address)
     {
         if (Name != name)
         {
@@ -78,6 +84,9 @@ public class EscapeRoom : BaseEntity
         DurationMinutes = durationMinutes;
         DifficultyLevel = difficultyLevel;
         PricePerPerson = pricePerPerson;
+        Latitude = latitude;
+        Longitude = longitude;
+        Address = address;
         UpdatedAt = DateTime.UtcNow;
     }
 
