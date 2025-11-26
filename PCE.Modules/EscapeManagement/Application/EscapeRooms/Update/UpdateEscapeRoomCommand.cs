@@ -11,4 +11,5 @@ public record UpdateEscapeRoomCommand(
     int MinPlayers,
     int DurationMinutes,
     string DifficultyLevel,
-    decimal PricePerPerson) : IRequest<Result<string>>;
+    decimal PricePerPerson,
+    string Address) : IRequest<Result<string>>;

@@ -1,88 +1,130 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import LeafletMap from './components/Maps/LeafletMap.vue';
+import EscapeRoomList from './components/EscapeRooms/EscapeRoomList.vue';
+import EscapeRoomForm from './components/EscapeRooms/EscapeRoomForm.vue';
+import CompanyList from './components/Companies/CompanyList.vue';
+import CompanyForm from './components/Companies/CompanyForm.vue';
 import { escapeRoomService } from './services/escapeRoomService';
 import type { EscapeRoomDto } from './types/models';
 
 const rooms = ref<EscapeRoomDto[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const debugInfo = ref<string>('');
+const currentView = ref<'map' | 'list' | 'create' | 'edit' | 'companies' | 'create-company' | 'edit-company'>('map');
+const editingSlug = ref<string | undefined>(undefined);
+const debugInfo = ref('');
 
-onMounted(async () => {
-  // Mostrar información de depuración
-  debugInfo.value = `Conectando a: /api/rooms`;
-  console.log('🌍 Frontend URL:', window.location.href);
-  
+const loadData = async () => {
+  loading.value = true;
   try {
-    // Intentar cargar desde el backend
-    console.log('🔄 Solicitando salas...');
     rooms.value = await escapeRoomService.getAllRooms();
-    console.log('✅ Salas recibidas:', rooms.value);
-    debugInfo.value += ` ✅ (${rooms.value.length} salas cargadas)`;
-    
-    const nuevaSala = ref<EscapeRoomDto>({
-            slug: 'atraco',
-            name: 'atraco',
-            description: 'atracoooo',
-            maxPlayers: 0,
-            minPlayers: 0,
-            durationMinutes: 0,
-            difficultyLevel: 'Fácil',
-            pricePerPerson: 0,
-            isActive: true,
-            companySlug: '',
-            latitude: 37.9703755,
-            longitude: -1.2233186,
-            createdAt: "",
-            updatedAt: null});
-
-    rooms.value = [nuevaSala.value];
-    
+    debugInfo.value = `Cargadas ${rooms.value.length} salas`;
   } catch (err) {
     error.value = 'Error al cargar las salas del backend';
-    console.error('❌ Error:', err);
-    debugInfo.value += ` ❌ Error: ${err instanceof Error ? err.message : 'Error desconocido'}`;
-    rooms.value = [];
+    console.error(err);
   } finally {
     loading.value = false;
   }
+};
+
+const showCreate = () => {
+  editingSlug.value = undefined;
+  currentView.value = 'create';
+};
+
+const showEdit = (slug: string) => {
+  editingSlug.value = slug;
+  currentView.value = 'edit';
+};
+
+const showCompanies = () => {
+  currentView.value = 'companies';
+};
+
+const showCreateCompany = () => {
+  editingSlug.value = undefined;
+  currentView.value = 'create-company';
+};
+
+const showEditCompany = (slug: string) => {
+  editingSlug.value = slug;
+  currentView.value = 'edit-company';
+};
+
+const onSaved = async () => {
+  await loadData();
+  currentView.value = 'list';
+};
+
+const onCompanySaved = async () => {
+  currentView.value = 'companies';
+};
+
+const onCancel = () => {
+  currentView.value = 'list';
+};
+
+const onCompanyCancel = () => {
+  currentView.value = 'companies';
+};
+
+onMounted(async () => {
+  await loadData();
 });
 </script>
 
 <template>
   <div id="app-container">
     <header>
-      <h1>Planea con Enanos - Escape Rooms</h1>
-      <p>Explora nuestras salas de escape en Madrid</p>
+      <h1>Planea con Enanos</h1>
+      <nav>
+        <button @click="currentView = 'map'" :class="{ active: currentView === 'map' }">Mapa</button>
+        <button @click="currentView = 'list'" :class="{ active: currentView === 'list' }">Salas</button>
+        <button @click="showCreate" :class="{ active: currentView === 'create' }">Nueva Sala</button>
+        <div class="separator"></div>
+        <button @click="showCompanies" :class="{ active: currentView === 'companies' }">Empresas</button>
+        <button @click="showCreateCompany" :class="{ active: currentView === 'create-company' }">Nueva Empresa</button>
+      </nav>
     </header>
     
     <div v-if="error" class="error-banner">
-      {{ error }}<br>
-      <small>{{ debugInfo }}</small>
+      {{ error }}
     </div>
     
-    <LeafletMap :rooms="rooms"></LeafletMap>
+    <main>
+      <div v-if="currentView === 'map'" class="map-view">
+        <LeafletMap :rooms="rooms"></LeafletMap>
+      </div>
+      
+      <div v-else-if="currentView === 'list'" class="list-view">
+        <EscapeRoomList @edit="showEdit" ref="listComponent" />
+      </div>
+      
+      <div v-else-if="currentView === 'create' || currentView === 'edit'" class="form-view">
+        <EscapeRoomForm 
+          :slug="editingSlug" 
+          @saved="onSaved" 
+          @cancel="onCancel" 
+        />
+      </div>
+
+      <div v-else-if="currentView === 'companies'" class="list-view">
+        <CompanyList @edit="showEditCompany" />
+      </div>
+
+      <div v-else-if="currentView === 'create-company' || currentView === 'edit-company'" class="form-view">
+        <CompanyForm 
+          :slug="editingSlug" 
+          @saved="onCompanySaved" 
+          @cancel="onCompanyCancel" 
+        />
+      </div>
+    </main>
     
-    <section class="rooms-list">
-      <h2>Salas Disponibles</h2>
-      <div v-if="loading" class="loading">
-        Cargando salas...
-      </div>
-      <div v-else class="rooms-grid">
-        <div v-if="rooms.length === 0" style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #999;">
-          No hay salas disponibles. {{ debugInfo }}
-        </div>
-        <div v-for="room in rooms" v-else :key="room.slug" class="room-card">
-          <h3>{{ room.name }}</h3>
-          <p><strong>Dificultad:</strong> {{ room.difficultyLevel }}</p>
-          <p><strong>Duración:</strong> {{ room.durationMinutes }} minutos</p>
-          <p><strong>Jugadores:</strong> {{ room.minPlayers }}-{{ room.maxPlayers }}</p>
-          <p><strong>Precio:</strong> €{{ room.pricePerPerson?.toFixed(2) ?? 'N/A' }}/persona</p>
-          <p v-if="room.latitude && room.longitude"><strong>Ubicación:</strong> {{ room.latitude.toFixed(4) }}, {{ room.longitude.toFixed(4) }}</p>
-        </div>
-      </div>
-    </section>
+    <footer>
+      <p>{{ debugInfo }}</p>
+    </footer>
   </div>
 </template>
 
@@ -97,92 +139,69 @@ onMounted(async () => {
 header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 2rem;
-  text-align: center;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 header h1 {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: bold;
+  font-size: 1.5rem;
 }
 
-header p {
-  margin: 0.5rem 0 0 0;
-  font-size: 1.1rem;
-  opacity: 0.9;
+nav {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.separator {
+  width: 1px;
+  height: 24px;
+  background-color: rgba(255,255,255,0.3);
+  margin: 0 0.5rem;
+}
+
+nav button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+}
+
+nav button:hover, nav button.active {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .error-banner {
   background-color: #fff3cd;
   color: #856404;
   padding: 1rem;
-  border-bottom: 1px solid #ffeaa7;
   text-align: center;
-  font-weight: 500;
 }
 
-.error-banner small {
-  display: block;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-  opacity: 0.8;
+main {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
 }
 
-:deep(.map-frame) {
+.map-view {
   flex: 1;
   min-height: 500px;
 }
 
-.rooms-list {
-  padding: 2rem;
-  background: white;
-  border-top: 2px solid #e0e0e0;
-}
-
-.rooms-list h2 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.8rem;
-}
-
-.loading {
+footer {
   text-align: center;
-  padding: 2rem;
+  padding: 1rem;
   color: #666;
-  font-size: 1.1rem;
-}
-
-.rooms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.room-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.room-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.room-card h3 {
-  margin: 0 0 1rem 0;
-  color: #667eea;
-  font-size: 1.3rem;
-}
-
-.room-card p {
-  margin: 0.5rem 0;
-  color: #666;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
 }
 </style>

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PCE.Modules.EscapeManagement.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using PCE.Modules.EscapeManagement.Infrastructure.Persistence;
 namespace PCE.Modules.EscapeManagement.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(EscapeManagementDbContext))]
-    partial class EscapeManagementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251126122658_AddAddressToEscapeRoom")]
+    partial class AddAddressToEscapeRoom
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

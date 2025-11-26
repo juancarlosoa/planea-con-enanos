@@ -2,6 +2,7 @@ using MediatR;
 using PCE.Modules.EscapeManagement.Domain.Companies.Repositories;
 using PCE.Shared.Abstractions.Persistence;
 using PCE.Shared.Primitives;
+using PCE.Modules.EscapeManagement.Application.Services;
 
 namespace PCE.Modules.EscapeManagement.Application.Companies.Update;
 
@@ -9,11 +10,16 @@ public class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyCommand,
 {
     private readonly ICompanyRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IGeocodingService _geocodingService;
 
-    public UpdateCompanyCommandHandler(ICompanyRepository repository, IUnitOfWork unitOfWork)
+    public UpdateCompanyCommandHandler(
+        ICompanyRepository repository,
+        IUnitOfWork unitOfWork,
+        IGeocodingService geocodingService)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _geocodingService = geocodingService;
     }
 
     public async Task<Result<string>> Handle(UpdateCompanyCommand request, CancellationToken cancellationToken)
@@ -32,10 +38,19 @@ public class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyCommand,
             return Result<string>.Failure("Email already in use", "Company.EmailAlreadyExists");
         }
 
+        var (lat, lon) = (company.Latitude, company.Longitude);
+        // Re-geocode if address changed or if it was empty and now is not
+        if (request.Address != company.Address && !string.IsNullOrWhiteSpace(request.Address))
+        {
+             (lat, lon) = await _geocodingService.GetCoordinatesAsync(request.Address);
+        }
+
         company.Update(
             request.Name,
             request.Email,
             request.Phone,
+            lat,
+            lon,
             request.Address,
             request.Website);
 

@@ -3,6 +3,7 @@ using PCE.Modules.EscapeManagement.Domain.Companies.Entities;
 using PCE.Modules.EscapeManagement.Domain.Companies.Repositories;
 using PCE.Shared.Abstractions.Persistence;
 using PCE.Shared.Primitives;
+using PCE.Modules.EscapeManagement.Application.Services;
 
 namespace PCE.Modules.EscapeManagement.Application.Companies.Create;
 
@@ -10,11 +11,16 @@ public class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyCommand,
 {
     private readonly ICompanyRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IGeocodingService _geocodingService;
 
-    public CreateCompanyCommandHandler(ICompanyRepository repository, IUnitOfWork unitOfWork)
+    public CreateCompanyCommandHandler(
+        ICompanyRepository repository,
+        IUnitOfWork unitOfWork,
+        IGeocodingService geocodingService)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _geocodingService = geocodingService;
     }
 
     public async Task<Result<string>> Handle(CreateCompanyCommand request, CancellationToken cancellationToken)
@@ -24,10 +30,18 @@ public class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyCommand,
             return Result<string>.Failure("Company with this email already exists", "Company.EmailAlreadyExists");
         }
 
+        var (lat, lon) = (0.0, 0.0);
+        if (!string.IsNullOrWhiteSpace(request.Address))
+        {
+            (lat, lon) = await _geocodingService.GetCoordinatesAsync(request.Address);
+        }
+
         var company = Company.Create(
             request.Name,
             request.Email,
             request.Phone,
+            lat,
+            lon,
             request.Address,
             request.Website);
 
