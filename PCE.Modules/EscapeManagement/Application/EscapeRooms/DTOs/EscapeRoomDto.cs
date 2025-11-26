@@ -11,6 +11,8 @@ public record EscapeRoomDto(
     decimal PricePerPerson,
     bool IsActive,
     string CompanySlug,
+    double Latitude,
+    double Longitude,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );

@@ -15,6 +15,8 @@ public class EscapeRoom : BaseEntity
     public string DifficultyLevel { get; private set; } = string.Empty;
     public decimal PricePerPerson { get; private set; }
     public bool IsActive { get; private set; }
+    public double Latitude { get; private set; }
+    public double Longitude { get; private set; }
 
     public Guid CompanyId { get; private set; }
     public Company Company { get; private set; } = null!;
@@ -29,7 +31,9 @@ public class EscapeRoom : BaseEntity
         int durationMinutes,
         string difficultyLevel,
         decimal pricePerPerson,
-        Guid companyId)
+        Guid companyId,
+        double latitude,
+        double longitude)
     {
         var id = Guid.NewGuid();
         var slug = Slug.Create(name);
@@ -47,6 +51,8 @@ public class EscapeRoom : BaseEntity
             PricePerPerson = pricePerPerson,
             CompanyId = companyId,
             IsActive = true,
+            Latitude = latitude,
+            Longitude = longitude,
             CreatedAt = DateTime.UtcNow
         };
     }
