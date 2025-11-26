@@ -40,7 +40,9 @@ public class CreateEscapeRoomCommandHandler : IRequestHandler<CreateEscapeRoomCo
             request.DurationMinutes,
             request.DifficultyLevel,
             request.PricePerPerson,
-            company.Id);
+            company.Id,
+            request.Latitude,
+            request.Longitude);
 
         if (await _repository.SlugExistsAsync(escapeRoom.Slug.Value, cancellationToken))
         {
