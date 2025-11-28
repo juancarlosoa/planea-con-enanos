@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import LeafletMap from './components/Maps/LeafletMap.vue';
+import RoutingTest from './components/Maps/RoutingTest.vue';
 import EscapeRoomList from './components/EscapeRooms/EscapeRoomList.vue';
 import EscapeRoomForm from './components/EscapeRooms/EscapeRoomForm.vue';
 import CompanyList from './components/Companies/CompanyList.vue';
@@ -11,7 +12,7 @@ import type { EscapeRoomDto } from './types/models';
 const rooms = ref<EscapeRoomDto[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const currentView = ref<'map' | 'list' | 'create' | 'edit' | 'companies' | 'create-company' | 'edit-company'>('map');
+const currentView = ref<'map' | 'list' | 'create' | 'edit' | 'companies' | 'create-company' | 'edit-company' | 'routing'>('map');
 const editingSlug = ref<string | undefined>(undefined);
 const debugInfo = ref('');
 
@@ -83,6 +84,8 @@ onMounted(async () => {
         <button @click="currentView = 'list'" :class="{ active: currentView === 'list' }">Salas</button>
         <button @click="showCreate" :class="{ active: currentView === 'create' }">Nueva Sala</button>
         <div class="separator"></div>
+        <button @click="currentView = 'routing'" :class="{ active: currentView === 'routing' }">🗺️ Rutas</button>
+        <div class="separator"></div>
         <button @click="showCompanies" :class="{ active: currentView === 'companies' }">Empresas</button>
         <button @click="showCreateCompany" :class="{ active: currentView === 'create-company' }">Nueva Empresa</button>
       </nav>
@@ -107,6 +110,10 @@ onMounted(async () => {
           @saved="onSaved" 
           @cancel="onCancel" 
         />
+      </div>
+
+      <div v-else-if="currentView === 'routing'" class="routing-view">
+        <RoutingTest />
       </div>
 
       <div v-else-if="currentView === 'companies'" class="list-view">
@@ -196,6 +203,13 @@ main {
 .map-view {
   flex: 1;
   min-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.routing-view {
+  flex: 1;
+  display: flex;
 }
 
 footer {

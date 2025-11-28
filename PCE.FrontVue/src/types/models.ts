@@ -44,6 +44,8 @@ export interface CreateEscapeRoomRequest {
   difficultyLevel: string;
   pricePerPerson: number;
   companySlug: string;
+  latitude: number;
+  longitude: number;
   address: string;
 }
 
@@ -56,6 +58,8 @@ export interface UpdateEscapeRoomRequest {
   durationMinutes: number;
   difficultyLevel: string;
   pricePerPerson: number;
+  latitude: number;
+  longitude: number;
   address: string;
 }
 
@@ -63,6 +67,8 @@ export interface CreateCompanyRequest {
   name: string;
   email: string;
   phone: string;
+  latitude?: number;
+  longitude?: number;
   address?: string;
   website?: string;
 }
@@ -72,6 +78,48 @@ export interface UpdateCompanyRequest {
   name: string;
   email: string;
   phone: string;
+  latitude?: number;
+  longitude?: number;
   address?: string;
   website?: string;
+}
+
+export interface LocationResult {
+  lat: string;
+  lon: string;
+  displayName: string;
+}
+
+export interface SearchLocationParams {
+  street?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+}
+
+// Routing types
+export interface RouteCoordinate {
+  longitude: number;
+  latitude: number;
+}
+
+export interface RouteRequest {
+  origin: RouteCoordinate;
+  destination: RouteCoordinate;
+  mode: 'car' | 'foot';
+}
+
+export interface RouteResponse {
+  distance: number; // in meters
+  duration: number; // in seconds
+  geometry?: number[][]; // array of [lon, lat] coordinates
+}
+
+export interface MockEscapeRoom {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  address: string;
 }

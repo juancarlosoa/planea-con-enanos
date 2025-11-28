@@ -18,8 +18,6 @@ public class InternalSecurityMiddleware
 
         if (string.IsNullOrEmpty(secret))
         {
-            // If no secret is configured, we might want to fail safe or allow (depending on policy).
-            // Here we assume if security is enabled, secret MUST be present.
             context.Response.StatusCode = 500;
             await context.Response.WriteAsync("Internal Security Error: Secret not configured.");
             return;

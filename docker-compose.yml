@@ -1,3 +1,7 @@
+networks:
+  escape_network:
+    external: true
+
 services:
   postgres:
     image: postgres:16
@@ -8,8 +12,10 @@ services:
       - ./dbInit:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - escape_network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER" ]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,6 +26,8 @@ services:
     env_file: .env
     ports:
       - "8080:80"
+    networks:
+      - escape_network
     depends_on:
       postgres:
         condition: service_healthy
@@ -30,23 +38,27 @@ services:
       dockerfile: PCE.Gateway/Dockerfile
     container_name: gateway
     ports:
-      - "5000:8080"
+      - "2000:8080"
+    networks:
+      - escape_network
     depends_on:
-      - app
+      - back-modules
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - INTERNAL_SECRET=${INTERNAL_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
 
-  app:
+  back-modules:
     build:
       context: .
       dockerfile: PCE.Modules/Dockerfile
-    container_name: app
+    container_name: back-modules
     env_file: .env
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - escape_network
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__EscapeManagement=Host=postgres;Database=${ESCAPE_MANAGEMENT_DB};Username=${DB_USER};Password=${DB_PASSWORD}
@@ -63,8 +75,10 @@ services:
       - gateway
     environment:
       - NODE_ENV=production
+    networks:
+      - escape_network
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost/ || exit 1" ]
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

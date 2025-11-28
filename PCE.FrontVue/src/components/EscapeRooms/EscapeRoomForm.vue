@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { escapeRoomService } from '../../services/escapeRoomService';
 import { companyService } from '../../services/companyService';
+import AddressSearchSelector from '../Shared/AddressSearchSelector.vue';
 import type { CreateEscapeRoomRequest, UpdateEscapeRoomRequest, CompanyDto } from '../../types/models';
 
 const props = defineProps<{
@@ -23,10 +24,18 @@ const formData = ref({
   difficultyLevel: 'Media',
   pricePerPerson: 20,
   companySlug: '',
+  latitude: 0,
+  longitude: 0,
   address: ''
 });
 
 const difficultyOptions = ['Fácil', 'Media', 'Difícil', 'Muy Difícil', 'Experto'];
+
+const onAddressSelected = (location: { latitude: number; longitude: number; address: string }) => {
+  formData.value.latitude = location.latitude;
+  formData.value.longitude = location.longitude;
+  formData.value.address = location.address;
+};
 
 onMounted(async () => {
   loading.value = true;
@@ -36,6 +45,7 @@ onMounted(async () => {
     
     if (isEditMode.value && props.slug) {
       const room = await escapeRoomService.getRoomBySlug(props.slug);
+      
       formData.value = {
         name: room.name,
         description: room.description,
@@ -45,7 +55,9 @@ onMounted(async () => {
         difficultyLevel: room.difficultyLevel,
         pricePerPerson: room.pricePerPerson,
         companySlug: room.companySlug,
-        address: room.address || ''
+        latitude: room.latitude,
+        longitude: room.longitude,
+        address: room.address
       };
     }
   } catch (error) {
@@ -69,6 +81,8 @@ const handleSubmit = async () => {
         durationMinutes: formData.value.durationMinutes,
         difficultyLevel: formData.value.difficultyLevel,
         pricePerPerson: formData.value.pricePerPerson,
+        latitude: formData.value.latitude,
+        longitude: formData.value.longitude,
         address: formData.value.address
       };
       await escapeRoomService.updateRoom(request);
@@ -82,6 +96,8 @@ const handleSubmit = async () => {
         difficultyLevel: formData.value.difficultyLevel,
         pricePerPerson: formData.value.pricePerPerson,
         companySlug: formData.value.companySlug,
+        latitude: formData.value.latitude,
+        longitude: formData.value.longitude,
         address: formData.value.address
       };
       await escapeRoomService.createRoom(request);
@@ -140,10 +156,12 @@ const handleSubmit = async () => {
         </select>
       </div>
       
-      <div class="form-group">
-        <label>Dirección (para mapa):</label>
-        <input v-model="formData.address" placeholder="Calle, Ciudad, País" required />
-      </div>
+      <AddressSearchSelector 
+        :initial-address="formData.address"
+        :initial-latitude="formData.latitude"
+        :initial-longitude="formData.longitude"
+        @selected="onAddressSelected" 
+      />
       
       <div class="form-group" v-if="!isEditMode">
         <label>Empresa:</label>
@@ -157,7 +175,7 @@ const handleSubmit = async () => {
       
       <div class="actions">
         <button type="button" @click="$emit('cancel')" class="btn-cancel">Cancelar</button>
-        <button type="submit" class="btn-save" :disabled="loading">
+        <button type="submit" class="btn-save" :disabled="loading || !formData.address">
           {{ loading ? 'Guardando...' : 'Guardar' }}
         </button>
       </div>
@@ -188,7 +206,7 @@ const handleSubmit = async () => {
   flex: 1;
 }
 
-label {
+.label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;

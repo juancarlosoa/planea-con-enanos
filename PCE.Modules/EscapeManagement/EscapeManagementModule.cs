@@ -7,8 +7,6 @@ using PCE.Modules.EscapeManagement.Infrastructure.Repositories.Companies;
 using PCE.Modules.EscapeManagement.Application.Companies.Mappers;
 using PCE.Modules.EscapeManagement.Application.EscapeRooms.Mappers;
 using PCE.Modules.EscapeManagement.Infrastructure.Repositories.EscapeRooms;
-using PCE.Modules.EscapeManagement.Application.Services;
-using PCE.Modules.EscapeManagement.Infrastructure.Services;
 
 namespace PCE.Modules.EscapeManagement;
 
@@ -29,7 +27,6 @@ public static class EscapeManagementModule
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<EscapeManagementDbContext>());
         services.AddSingleton<CompanyMapper>();
         services.AddSingleton<EscapeRoomMapper>();
-        services.AddHttpClient<IGeocodingService, NominatimGeocodingService>();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(EscapeManagementModule).Assembly));
 

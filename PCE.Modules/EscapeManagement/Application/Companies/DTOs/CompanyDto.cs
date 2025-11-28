@@ -7,6 +7,8 @@ public record CompanyDto(
     string Name,
     string Email,
     string Phone,
+    double Latitude,
+    double Longitude,
     string? Address,
     string? Website,
     DateTime CreatedAt,

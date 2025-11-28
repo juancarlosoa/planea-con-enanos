@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PCE.Shared.DependencyInjection;
 using PCE.Modules.EscapeManagement;
 using PCE.Modules.Infrastructure.Security;
+using PCE.Modules.Location;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +12,10 @@ builder.Services.AddSwaggerGen();
 
 builder.Services
     .AddShared()
-    .AddEscapeManagementModule(builder.Configuration);
+    .AddEscapeManagementModule(builder.Configuration)
+    .AddLocationModule(builder.Configuration);
 
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
+builder.WebHost.UseUrls("http://0.0.0.0:2000");
 
 var app = builder.Build();
 

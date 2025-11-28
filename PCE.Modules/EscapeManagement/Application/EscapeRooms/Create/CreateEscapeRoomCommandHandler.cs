@@ -4,7 +4,6 @@ using PCE.Modules.EscapeManagement.Domain.EscapeRooms.Repositories;
 using PCE.Modules.EscapeManagement.Domain.Companies.Repositories;
 using PCE.Shared.Abstractions.Persistence;
 using PCE.Shared.Primitives;
-using PCE.Modules.EscapeManagement.Application.Services;
 
 namespace PCE.Modules.EscapeManagement.Application.EscapeRooms.Create;
 
@@ -13,18 +12,15 @@ public class CreateEscapeRoomCommandHandler : IRequestHandler<CreateEscapeRoomCo
     private readonly IEscapeRoomRepository _repository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IGeocodingService _geocodingService;
 
     public CreateEscapeRoomCommandHandler(
         IEscapeRoomRepository repository,
         ICompanyRepository companyRepository,
-        IUnitOfWork unitOfWork,
-        IGeocodingService geocodingService)
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _companyRepository = companyRepository;
         _unitOfWork = unitOfWork;
-        _geocodingService = geocodingService;
     }
 
     public async Task<Result<string>> Handle(CreateEscapeRoomCommand request, CancellationToken cancellationToken)
@@ -36,8 +32,6 @@ public class CreateEscapeRoomCommandHandler : IRequestHandler<CreateEscapeRoomCo
             return Result<string>.Failure("Company not found", "Company.NotFound");
         }
 
-        var (lat, lon) = await _geocodingService.GetCoordinatesAsync(request.Address);
-
         var escapeRoom = EscapeRoom.Create(
             request.Name,
             request.Description,
@@ -47,8 +41,8 @@ public class CreateEscapeRoomCommandHandler : IRequestHandler<CreateEscapeRoomCo
             request.DifficultyLevel,
             request.PricePerPerson,
             company.Id,
-            lat,
-            lon,
+            request.Latitude,
+            request.Longitude,
             request.Address);
 
         if (await _repository.SlugExistsAsync(escapeRoom.Slug.Value, cancellationToken))
@@ -62,3 +56,4 @@ public class CreateEscapeRoomCommandHandler : IRequestHandler<CreateEscapeRoomCo
         return Result<string>.Success(escapeRoom.Slug.Value);
     }
 }
+

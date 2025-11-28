@@ -1,0 +1,36 @@
+networks:
+  escape_network:
+    external: true
+
+services:
+  osrm-car:
+    image: osrm/osrm-backend
+    container_name: osrm-car-valencia
+    volumes:
+      - ./osrm-data/car:/data
+    command: osrm-routed --algorithm mld /data/valencia.osrm
+    ports:
+      - "5010:5010"
+    networks:
+      - escape_network
+
+  osrm-foot:
+    image: osrm/osrm-backend
+    container_name: osrm-foot-valencia
+    volumes:
+      - ./osrm-data/foot:/data
+    command: osrm-routed --algorithm mld /data/valencia-foot.osrm
+    ports:
+      - "5011:5011"
+    networks:
+      - escape_network
+#  otp:
+#    image: openplanner/otp
+#    container_name: otp-cataluna
+#    volumes:
+#      - ./otp-data/cataluna:/data
+#    command: ["--build", "/data", "--router", "cataluna", "--port", "5022"]
+#    ports:
+#      - "5022:5022"
+#    networks:
+#      - escape_network

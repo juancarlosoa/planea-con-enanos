@@ -13,6 +13,7 @@ public record EscapeRoomDto(
     string CompanySlug,
     double Latitude,
     double Longitude,
+    string Address,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { companyService } from '../../services/companyService';
+import AddressSearchSelector from '../Shared/AddressSearchSelector.vue';
 import type { CreateCompanyRequest, UpdateCompanyRequest } from '../../types/models';
 
 const props = defineProps<{
@@ -16,19 +17,30 @@ const formData = ref({
   name: '',
   email: '',
   phone: '',
+  latitude: 0,
+  longitude: 0,
   address: '',
   website: ''
 });
+
+const onAddressSelected = (location: { latitude: number; longitude: number; address: string }) => {
+  formData.value.latitude = location.latitude;
+  formData.value.longitude = location.longitude;
+  formData.value.address = location.address;
+};
 
 onMounted(async () => {
   if (isEditMode.value && props.slug) {
     loading.value = true;
     try {
       const company = await companyService.getCompanyBySlug(props.slug);
+
       formData.value = {
         name: company.name,
         email: company.email,
         phone: company.phone,
+        latitude: company.latitude,
+        longitude: company.longitude,
         address: company.address || '',
         website: company.website || ''
       };
@@ -50,6 +62,8 @@ const handleSubmit = async () => {
         name: formData.value.name,
         email: formData.value.email,
         phone: formData.value.phone,
+        latitude: formData.value.latitude,
+        longitude: formData.value.longitude,
         address: formData.value.address,
         website: formData.value.website
       };
@@ -59,6 +73,8 @@ const handleSubmit = async () => {
         name: formData.value.name,
         email: formData.value.email,
         phone: formData.value.phone,
+        latitude: formData.value.latitude,
+        longitude: formData.value.longitude,
         address: formData.value.address,
         website: formData.value.website
       };
@@ -95,10 +111,12 @@ const handleSubmit = async () => {
         </div>
       </div>
       
-      <div class="form-group">
-        <label>Dirección (para mapa):</label>
-        <input v-model="formData.address" placeholder="Calle, Ciudad, País" />
-      </div>
+      <AddressSearchSelector 
+        :initial-address="formData.address"
+        :initial-latitude="formData.latitude"
+        :initial-longitude="formData.longitude"
+        @selected="onAddressSelected" 
+      />
       
       <div class="form-group">
         <label>Sitio Web:</label>
