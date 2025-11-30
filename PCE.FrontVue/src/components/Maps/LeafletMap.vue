@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, onBeforeUnmount } from 'vue';
+import { onMounted, ref, shallowRef, markRaw, watch, onBeforeUnmount } from 'vue';
 import L, { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { EscapeRoomMapDto } from '../../types/models';
@@ -30,8 +30,8 @@ const emit = defineEmits<{
 }>();
 
 const mapContainer = ref<HTMLElement | null>(null);
-const map = ref<L.Map | null>(null);
-const markers = ref<L.Marker[]>([]);
+const map = shallowRef<L.Map | null>(null);
+const markers = shallowRef<L.Marker[]>([]);
 
 type DefaultIconOptions = Icon.Default & {
   _getIconUrl?: string;
@@ -52,7 +52,7 @@ onMounted(() => {
   }
 
   // Inicializar el mapa
-  map.value = L.map(mapContainer.value).setView(props.center, props.zoom);
+  map.value = markRaw(L.map(mapContainer.value).setView(props.center, props.zoom));
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
@@ -103,7 +103,7 @@ const renderMarkers = () => {
   // Agregar nuevos marcadores
   props.rooms?.forEach(room => {
     if (map.value) {
-      const marker = L.marker([room.latitude, room.longitude]).addTo(map.value as L.Map);
+      const marker = markRaw(L.marker([room.latitude, room.longitude])).addTo(map.value as L.Map);
       marker.bindPopup(`<b>${room.name}</b><br>Dificultad: ${room.difficultyLevel}`);
       markers.value.push(marker);
     }
