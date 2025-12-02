@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { RouteRequest, RouteResponse, MockEscapeRoom } from '../types/models';
+import type { RouteRequest, RouteResponse, MockEscapeRoom, MultiPointRouteRequest, MultiPointRouteResponse, RouteSegment } from '../types/models';
 
 // Mock data for Madrid escape rooms with real coordinates
 export const mockMadridRooms: MockEscapeRoom[] = [
@@ -88,6 +88,68 @@ class RoutingService {
             console.error('Error fetching route:', error);
             throw error;
         }
+    }
+
+    async getMultiPointRoute(request: MultiPointRouteRequest): Promise<MultiPointRouteResponse> {
+        const { waypoints, mode } = request;
+
+        if (waypoints.length < 2) {
+            throw new Error('At least 2 waypoints are required');
+        }
+
+        const segments: RouteSegment[] = [];
+        const combinedGeometry: number[][] = [];
+        let totalDistance = 0;
+        let totalDuration = 0;
+
+        // Calculate route for each consecutive pair of waypoints
+        for (let i = 0; i < waypoints.length - 1; i++) {
+            const origin = waypoints[i];
+            const destination = waypoints[i + 1];
+
+            if (!origin || !destination) {
+                throw new Error(`Invalid waypoint at index ${i}`);
+            }
+
+            try {
+                const segmentRoute = await this.getRoute({
+                    origin,
+                    destination,
+                    mode
+                });
+
+                const segment: RouteSegment = {
+                    distance: segmentRoute.distance,
+                    duration: segmentRoute.duration,
+                    geometry: segmentRoute.geometry || [],
+                    fromIndex: i,
+                    toIndex: i + 1
+                };
+
+                segments.push(segment);
+                totalDistance += segmentRoute.distance;
+                totalDuration += segmentRoute.duration;
+
+                // Add geometry to combined array
+                // Skip the first coordinate of subsequent segments to avoid duplicates
+                if (segmentRoute.geometry) {
+                    const geometryToAdd = i === 0
+                        ? segmentRoute.geometry
+                        : segmentRoute.geometry.slice(1);
+                    combinedGeometry.push(...geometryToAdd);
+                }
+            } catch (error) {
+                console.error(`Error calculating segment ${i} to ${i + 1}:`, error);
+                throw new Error(`Failed to calculate route segment from waypoint ${i + 1} to ${i + 2}`);
+            }
+        }
+
+        return {
+            segments,
+            totalDistance,
+            totalDuration,
+            combinedGeometry
+        };
     }
 
     getMockRooms(): MockEscapeRoom[] {

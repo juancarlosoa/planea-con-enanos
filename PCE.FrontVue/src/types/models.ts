@@ -123,3 +123,24 @@ export interface MockEscapeRoom {
   longitude: number;
   address: string;
 }
+
+// Multi-point routing types
+export interface MultiPointRouteRequest {
+  waypoints: RouteCoordinate[]; // Array of coordinates in order
+  mode: 'car' | 'foot';
+}
+
+export interface RouteSegment {
+  distance: number; // in meters
+  duration: number; // in seconds
+  geometry: number[][]; // array of [lon, lat] coordinates
+  fromIndex: number; // index of starting waypoint
+  toIndex: number; // index of ending waypoint
+}
+
+export interface MultiPointRouteResponse {
+  segments: RouteSegment[]; // Individual route segments
+  totalDistance: number; // in meters
+  totalDuration: number; // in seconds
+  combinedGeometry: number[][]; // Complete route geometry
+}
