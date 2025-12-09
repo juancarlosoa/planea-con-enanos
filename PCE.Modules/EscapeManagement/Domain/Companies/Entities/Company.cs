@@ -11,12 +11,12 @@ public class Company : BaseEntity
     public string Email { get; private set; } = string.Empty;
     public string Phone { get; private set; } = string.Empty;
     public string? Address { get; private set; }
-    
+
     public string? Website { get; private set; }
     public double Latitude { get; private set; }
     public double Longitude { get; private set; }
 
-    private readonly List<EscapeRoom> _escapeRooms = new();
+    private readonly List<EscapeRoom> _escapeRooms = [];
     public IReadOnlyCollection<EscapeRoom> EscapeRooms => _escapeRooms.AsReadOnly();
 
     private Company() { }
